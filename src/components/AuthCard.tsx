@@ -128,7 +128,9 @@ export default function AuthCard() {
       const queryParams: Record<string, string> = { prompt: "select_account" };
       if (email) queryParams.login_hint = email;
 
-      const redirectTo = buildRedirect("/auth?reset=1");
+      sessionStorage.setItem("post_login_next", next || "/");
+
+      const redirectTo = buildRedirect("#/auth/callback");
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",

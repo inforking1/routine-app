@@ -2,6 +2,7 @@
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import useAuth from "./hooks/useAuth";
+import AuthCallback from "./pages/AuthCallback";
 
 // 상단 바
 import TopNav from "./components/TopNav";
@@ -182,6 +183,7 @@ export default function App() {
           <Route path="/settings" element={<SettingsPage onHome={() => navigate("/")} />} />
           <Route path="/pledges" element={<PledgesPage onBack={() => navigate("/")} />} />
           <Route path="/auth" element={<AuthScreen />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="*" element={<div className="p-6 text-slate-600">페이지를 찾을 수 없습니다.</div>} />
         </Routes>
       </div>
