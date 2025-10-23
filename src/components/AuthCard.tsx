@@ -10,7 +10,7 @@ function buildRedirect(next: string | null | undefined) {
   // next가 "/"면 홈, 그 외엔 선행 "/" 제거 후 base 뒤에 붙임
   const cleaned = !next || next === "/" ? "" : String(next).replace(/^\//, "");
   // 쿼리스트링/해시도 그대로 동작하도록 cleaned 그대로 붙임
-  return origin + base + "#/" + cleaned;
+  return origin + base + "auth/callback";
 }
 
 type View = "sign_in" | "sign_up";
@@ -130,7 +130,7 @@ export default function AuthCard() {
 
       sessionStorage.setItem("post_login_next", next || "/");
 
-      const redirectTo = buildRedirect("#/auth/callback");
+      const redirectTo = buildRedirect("/auth/callback");
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
