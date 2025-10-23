@@ -130,7 +130,7 @@ export default function AuthCard() {
 
       sessionStorage.setItem("post_login_next", next || "/");
 
-      const redirectTo = buildRedirect("/auth/callback");
+      const redirectTo = buildRedirect("auth/callback");
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
