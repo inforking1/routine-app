@@ -61,7 +61,7 @@ export default function AuthCard() {
       aborted = true;
       try {
         sub.subscription.unsubscribe();
-      } catch {/* no-op */}
+      } catch { /* no-op */ }
       if (typeof window !== "undefined" && safety) window.clearTimeout(safety);
     };
   }, []);
@@ -113,6 +113,7 @@ export default function AuthCard() {
     setError(null);
     setBusy(true);
     try {
+      // ✅ 계정 선택 강제 (select_account)
       const queryParams: Record<string, string> = { prompt: "select_account" };
       if (email) queryParams.login_hint = email;
 
@@ -217,15 +218,19 @@ export default function AuthCard() {
           {view === "sign_in" ? "로그인" : "회원가입"}
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-white/20 p-1 text-sm">
+        <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-white/20 p-1 text-sm" role="tablist" aria-label="인증 탭">
           <button
             onClick={() => setView("sign_in")}
+            role="tab"
+            aria-selected={view === "sign_in"}
             className={`rounded-lg py-2 transition ${view === "sign_in" ? "bg-white text-emerald-600" : "text-white/80"}`}
           >
             로그인
           </button>
           <button
             onClick={() => setView("sign_up")}
+            role="tab"
+            aria-selected={view === "sign_up"}
             className={`rounded-lg py-2 transition ${view === "sign_up" ? "bg-white text-emerald-600" : "text-white/80"}`}
           >
             회원가입
@@ -239,7 +244,7 @@ export default function AuthCard() {
 
         <label className="mb-1 block text-xs text-slate-500">이메일</label>
         <div className="mb-3 flex items-center gap-2 rounded-2xl border px-3 py-2.5">
-          <span className="text-slate-400">✉️</span>
+          <span className="text-slate-400" aria-hidden>✉️</span>
           <input
             type="email"
             value={email}
@@ -252,7 +257,7 @@ export default function AuthCard() {
 
         <label className="mb-1 block text-xs text-slate-500">비밀번호</label>
         <div className="mb-1 flex items-center gap-2 rounded-2xl border px-3 py-2.5">
-          <span className="text-slate-400">🔒</span>
+          <span className="text-slate-400" aria-hidden>🔒</span>
           <input
             type={showPw ? "text" : "password"}
             value={password}
@@ -266,6 +271,7 @@ export default function AuthCard() {
             onClick={() => setShowPw((v) => !v)}
             className="text-xs text-slate-500"
             title={showPw ? "숨기기" : "표시"}
+            aria-label={showPw ? "비밀번호 숨기기" : "비밀번호 표시"}
           >
             {showPw ? "🙈" : "👁️"}
           </button>
@@ -299,6 +305,7 @@ export default function AuthCard() {
           onClick={handleGoogle}
           disabled={busy}
           className="h-12 w-full rounded-2xl border bg-white text-sm font-medium transition active:scale-[0.99] disabled:opacity-50"
+          aria-label="Google 계정으로 계속하기"
         >
           <span className="inline-flex items-center gap-2">
             <span className="text-lg">🟢</span>
