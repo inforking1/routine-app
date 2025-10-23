@@ -10,11 +10,13 @@ type Props = {
   onAction?: () => void;
   className?: string;
   children: React.ReactNode;
+  color?: string;
 };
 
 export default function SectionCard({
   title,
   subtitle,
+  color,
   actionLabel,
   onAction,
   className,
