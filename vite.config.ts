@@ -3,7 +3,6 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  // HashRouter면 base는 항상 "/"가 가장 안전합니다.
-  base: "/",
+  base: "./", // ⬅️ 이게 핵심! (절대경로 '/' 금지)
   build: { outDir: "dist" }
 });
