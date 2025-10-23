@@ -1,5 +1,11 @@
 import { create } from "zustand";
-import type { Anniv } from "../data/anniversaries";
+
+export type Anniv = {
+  id: string;
+  title: string;
+  date: string;
+  pinned?: boolean;
+}
 
 type S = {
   items: Anniv[];
