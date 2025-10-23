@@ -1,5 +1,5 @@
 // src/App.tsx
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import useAuth from "./hooks/useAuth";
 
@@ -42,11 +42,9 @@ type View =
   | "settings"
   | "pledges";
 
-  function GuideInline() {
-  // PageShell 없이도 독립적으로 보이는 임베드형 가이드
+function GuideInline() {
   return (
     <section className="mt-6 grid gap-4">
-      {/* 헤더 */}
       <div className="rounded-2xl border border-slate-300 bg-white p-5">
         <h2 className="text-lg font-semibold">성공을 부르는 루틴 가이드</h2>
         <p className="mt-1 text-sm text-slate-600">
@@ -54,7 +52,6 @@ type View =
         </p>
       </div>
 
-      {/* 여정 뱃지 */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="rounded-full border px-3 py-1">💭 마음 (Mind)</span>
@@ -69,7 +66,6 @@ type View =
         </div>
       </div>
 
-      {/* 5단계 핵심 */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h4 className="text-base font-semibold">1) 마음 — 하루의 방향</h4>
@@ -93,7 +89,6 @@ type View =
         </div>
       </div>
 
-      {/* 하루 UX 흐름 */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5">
         <h3 className="mb-2 text-base font-semibold">하루 UX 흐름</h3>
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
@@ -108,8 +103,7 @@ type View =
 
 export default function App() {
   const navigate = useNavigate();
-  const { user, ready } = useAuth(); // ✅ 타입 안전 + 항상 값 보장
-
+  const { user, ready } = useAuth();
   const [meditationNote, setMeditationNote] = useState<string>("");
 
   const go = (view: View) => {
@@ -151,7 +145,6 @@ export default function App() {
         <TopNav />
         <div className="mx-auto max-w-6xl p-5 md:p-8">
           <AuthScreen />
-          {/* ✅ 로그인 화면 아래에 루틴 가이드를 바로 노출 */}
           <GuideInline />
         </div>
       </>
