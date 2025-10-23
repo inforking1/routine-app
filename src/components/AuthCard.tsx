@@ -2,6 +2,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
+// 상단 import 아래 아무 곳에 헬퍼 추가
+function buildRedirect(next: string | null | undefined) {
+  if (typeof window === "undefined") return undefined;
+  const origin = window.location.origin;
+  const base = (import.meta as any).env?.BASE_URL || "/";
+  // next가 "/"면 홈, 그 외엔 선행 "/" 제거 후 base 뒤에 붙임
+  const cleaned = !next || next === "/" ? "" : String(next).replace(/^\//, "");
+  // 쿼리스트링/해시도 그대로 동작하도록 cleaned 그대로 붙임
+  return origin + base + "#/" + cleaned;
+}
+
 type View = "sign_in" | "sign_up";
 
 export default function AuthCard() {
@@ -117,9 +128,7 @@ export default function AuthCard() {
       const queryParams: Record<string, string> = { prompt: "select_account" };
       if (email) queryParams.login_hint = email;
 
-      // OAuth는 절대경로 필요. next 보존
-      const redirectTo =
-        typeof window !== "undefined" ? window.location.origin + (next || "/") : undefined;
+      const redirectTo = buildRedirect("/auth?reset=1");
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -142,8 +151,7 @@ export default function AuthCard() {
     }
     setBusy(true);
     try {
-      const redirectTo =
-        typeof window !== "undefined" ? window.location.origin + "/auth?reset=1" : undefined;
+      const redirectTo = buildRedirect("/auth?reset=1");
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
       setInfo("비밀번호 재설정 메일을 보냈습니다.");
