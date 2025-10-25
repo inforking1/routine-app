@@ -1,16 +1,11 @@
 // src/App.tsx
 import { Routes, Route, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useAuth from "./hooks/useAuth";
 import AuthCallback from "./pages/AuthCallback";
-
-// 상단 바
+import InstallPWAButton from "./components/InstallPWAButton";
 import TopNav from "./components/TopNav";
-
-// 로그인 전 카드
 import AuthCard from "./components/AuthCard";
-
-// Pages
 import Home from "./pages/Home";
 import RoutineGuidePage from "./pages/RoutineGuide";
 import GoalsPage from "./pages/GoalsPage";
@@ -29,44 +24,29 @@ import RoleManagementPage from "./pages/RoleManagementPage";
 import AdminMissionsPage from "./pages/AdminMissionsPage";
 
 type View =
-  | "home"
-  | "goals"
-  | "todos"
-  | "anniversaries"
-  | "news"
-  | "meditation"
-  | "bucket"
-  | "gratitude"
-  | "mission"
-  | "contacts"
-  | "community"
-  | "settings"
-  | "pledges";
+  | "home" | "goals" | "todos" | "anniversaries" | "news" | "meditation"
+  | "bucket" | "gratitude" | "mission" | "contacts" | "community"
+  | "settings" | "pledges";
 
+/* 가이드 섹션: 상단 여백 살짝 줄임 */
 function GuideInline() {
   return (
-    <section className="mt-6 grid gap-4">
+    <section className="mt-3 grid gap-3">
       <div className="rounded-2xl border border-slate-300 bg-white p-5">
         <h2 className="text-lg font-semibold">성공을 부르는 루틴 가이드</h2>
         <p className="mt-1 text-sm text-slate-600">
           마음–행동–관계–보상–성찰의 5단계로 하루를 설계합니다. 아침엔 나를 세우고, 낮엔 세상을 관리하며, 밤엔 마음을 정리하세요.
         </p>
       </div>
-
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="rounded-full border px-3 py-1">💭 마음 (Mind)</span>
-          <span>→</span>
-          <span className="rounded-full border px-3 py-1">💪 행동 (Action)</span>
-          <span>→</span>
-          <span className="rounded-full border px-3 py-1">🤝 관계 (Relation)</span>
-          <span>→</span>
-          <span className="rounded-full border px-3 py-1">🎁 보상 (Reward)</span>
-          <span>→</span>
+          <span className="rounded-full border px-3 py-1">💭 마음 (Mind)</span><span>→</span>
+          <span className="rounded-full border px-3 py-1">💪 행동 (Action)</span><span>→</span>
+          <span className="rounded-full border px-3 py-1">🤝 관계 (Relation)</span><span>→</span>
+          <span className="rounded-full border px-3 py-1">🎁 보상 (Reward)</span><span>→</span>
           <span className="rounded-full border px-3 py-1">🌙 성찰 (Reflection)</span>
         </div>
       </div>
-
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h4 className="text-base font-semibold">1) 마음 — 하루의 방향</h4>
@@ -89,7 +69,6 @@ function GuideInline() {
           <p className="text-sm text-slate-600">감사일기 1~3줄로 하루를 마무리하세요. 작지만 꾸준한 성찰이 삶을 바꿉니다.</p>
         </div>
       </div>
-
       <div className="rounded-2xl border border-slate-200 bg-white p-5">
         <h3 className="mb-2 text-base font-semibold">하루 UX 흐름</h3>
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
@@ -102,26 +81,50 @@ function GuideInline() {
   );
 }
 
+/* 로그인 화면 컴팩트화 */
+function AuthScreen() {
+  return (
+    <div className="bg-gradient-to-b from-white to-slate-50">
+      <div className="mx-auto max-w-md px-4 py-6">
+        <div className="mb-4 text-center">
+          <h1 className="text-2xl font-bold tracking-tight">성공을 부르는 루틴</h1>
+          <p className="mt-1 text-slate-500 text-sm">당신의 루틴을 시작하세요.</p>
+        </div>
+        <div id="auth-card" className="mx-auto">
+          <AuthCard />
+        </div>
+        <p className="mt-2 text-center text-xs text-slate-400">
+          계속 진행하면 서비스 약관과 개인정보 처리방침에 동의하게 됩니다.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const navigate = useNavigate();
   const { user, ready } = useAuth();
   const [meditationNote, setMeditationNote] = useState<string>("");
 
+  // ✅ PWA 설치 상태 감지 → 설치 패널 자동 숨김(여백도 사라짐)
+  const [isStandalone, setIsStandalone] = useState(false);
+  useEffect(() => {
+    const check = () =>
+      window.matchMedia?.("(display-mode: standalone)")?.matches ||
+      // iOS Safari
+      (window as any).navigator?.standalone === true;
+    setIsStandalone(check());
+    const onInstalled = () => setIsStandalone(true);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => window.removeEventListener("appinstalled", onInstalled);
+  }, []);
+
   const go = (view: View) => {
     const map: Record<View, string> = {
-      home: "/",
-      goals: "/goals",
-      todos: "/todos",
-      anniversaries: "/anniversaries",
-      news: "/news",
-      meditation: "/meditation",
-      bucket: "/bucket",
-      gratitude: "/gratitude",
-      mission: "/mission",
-      contacts: "/contacts",
-      community: "/community",
-      settings: "/settings",
-      pledges: "/pledges",
+      home: "/", goals: "/goals", todos: "/todos", anniversaries: "/anniversaries",
+      news: "/news", meditation: "/meditation", bucket: "/bucket", gratitude: "/gratitude",
+      mission: "/mission", contacts: "/contacts", community: "/community",
+      settings: "/settings", pledges: "/pledges",
     };
     navigate(map[view] ?? "/");
   };
@@ -144,9 +147,23 @@ export default function App() {
     return (
       <>
         <TopNav />
-        <div className="mx-auto max-w-6xl p-5 md:p-8">
+        {/* ✅ 수정 후 — 간격 완전 압축 */}
+        <div className="mx-auto max-w-6xl px-4 pt-4 md:px-6 md:pt-6">
           <AuthScreen />
-          <GuideInline />
+
+        {!isStandalone && (
+          <div className="mt-2 mx-auto w-full max-w-sm flex flex-col items-center rounded-2xl border border-gray-200 bg-white/60 p-3 shadow-sm backdrop-blur-md">
+            <p className="mb-1 text-center text-sm text-gray-700 leading-snug">
+              설치하시면 <span className="font-semibold text-blue-600">앱처럼 편리하게</span> 사용하실 수 있어요.
+            </p>
+            <InstallPWAButton />
+          </div>
+        )}
+
+          {/* 가이드 섹션과의 간격 최소화 */}
+          <div className={`${isStandalone ? "mt-3" : "mt-2"}`}>
+            <GuideInline />
+          </div>
         </div>
       </>
     );
@@ -164,13 +181,7 @@ export default function App() {
           <Route path="/goals" element={<GoalsPage onHome={() => navigate("/")} />} />
           <Route
             path="/meditation"
-            element={
-              <MeditationPage
-                note={meditationNote}
-                setNote={setMeditationNote}
-                onHome={() => navigate("/")}
-              />
-            }
+            element={<MeditationPage note={meditationNote} setNote={setMeditationNote} onHome={() => navigate("/")} />}
           />
           <Route path="/todos" element={<TodosPage onHome={() => navigate("/")} />} />
           <Route path="/anniversaries" element={<AnniversariesPage onHome={() => navigate("/")} />} />
@@ -188,24 +199,5 @@ export default function App() {
         </Routes>
       </div>
     </>
-  );
-}
-
-function AuthScreen() {
-  return (
-    <div className="min-h-[calc(100vh-56px)] bg-gradient-to-b from-white to-slate-50">
-      <div className="mx-auto max-w-md px-4 py-10">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold tracking-tight">성공을 부르는 루틴</h1>
-          <p className="mt-1 text-slate-500 text-sm">당신의 루틴을 시작하세요.</p>
-        </div>
-        <div id="auth-card" className="mx-auto">
-          <AuthCard />
-        </div>
-        <p className="mt-6 text-center text-xs text-slate-400">
-          계속 진행하면 서비스 약관과 개인정보 처리방침에 동의하게 됩니다.
-        </p>
-      </div>
-    </div>
   );
 }

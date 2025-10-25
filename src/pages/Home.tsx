@@ -316,141 +316,116 @@ export default function Home({ onNavigate }: HomeProps) {
     user?.user_metadata?.full_name ||
     user?.email?.split("@")[0] ||
     "사용자";
+
   return (
     <PageShell showHeader={false}>
+      <div className="mx-auto max-w-3xl xl:max-w-6xl space-y-6">
+        {/* 상단 인사 배너 ... */}
+        <MindTrigger className="mb-4 md:mb-5 xl:mb-6" onManage={() => onNavigate("pledges")} />
 
-    <div className="mx-auto max-w-3xl xl:max-w-6xl space-y-6">
-      {/* 상단 인사 배너 */}
-      <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white px-6 py-5 shadow-sm">
-        <div>
-          <p className="text-sm text-slate-600">
-            안녕하세요, <span className="font-medium text-slate-900">{displayName}</span>님
-          </p>
-          <p className="mt-1 text-[15px] font-semibold text-slate-900">
-            오늘의 작은 루틴으로 큰 변화를 시작해볼까요?
-          </p>
-        </div>
-        <div className="hidden md:flex h-10 w-10 items-center justify-center rounded-full bg-white text-2xl shadow">
-          🌱
-        </div>
-      </div>
-
-      {/* 오늘의 다짐 — 아래 섹션과의 여백 추가 (PC에서 더 여유 있게) */}
-      <MindTrigger className="mb-4 md:mb-5 xl:mb-6" onManage={() => onNavigate("pledges")} />
-
-      {/* 섹션 카드들 — PC에서 3열, 카드들은 상단 정렬 */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 items-start">
-        <SectionCard
-          title="나의 목표"
-          subtitle="목표를 명확히 하고, 한걸음 더 실천하세요"
-          
-          actionLabel="목표 관리"
-          onAction={() => onNavigate("goals")}
-        >
-          <GoalsPreview userId={user.id} />
-        </SectionCard>
-
-        <SectionCard
-          title="오늘의 명상"
-          subtitle="잠시 멈추고, 명상을 자신의 삶에 대입해보세요"
-          
-          actionLabel="명상 보기"
-          onAction={() => onNavigate("meditation")}
+        {/* ✅ 여기 클래스만 변경: SectionCard 내부 h3(제목) 타이포 강화 */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 items-start
+                        [&_h3]:text-lg md:[&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-slate-900">
+          <SectionCard
+            title="나의 목표"
+            subtitle="목표를 명확히 하고, 한걸음 더 실천하세요"
+            actionLabel="목표 관리"
+            onAction={() => onNavigate("goals")}
           >
-          <MeditationOfTheDay variant="inline" className="mt-1" />
-        </SectionCard>
+            <GoalsPreview userId={user.id} />
+          </SectionCard>
 
-        <SectionCard
-          title="오늘의 할 일 (Top 3)"
-          subtitle="하루에 중요한 3가지는 꼭 실천하세요"
-          
-          actionLabel="할 일 관리"
-          onAction={() => onNavigate("todos")}
-        >
-          <TodosPreview userId={user.id} />
-        </SectionCard>
+          <SectionCard
+            title="오늘의 명상"
+            subtitle="잠시 멈추고, 명상을 자신의 삶에 대입해보세요"
+            actionLabel="명상 보기"
+            onAction={() => onNavigate("meditation")}
+          >
+            <MeditationOfTheDay variant="inline" className="mt-1" />
+          </SectionCard>
 
-        <SectionCard
-          title="기념일 챙기기"
-          subtitle="소중한 사람의 기념일을 꼭 챙기세요"
-          
-          actionLabel="기념일 관리"
-          onAction={() => onNavigate("anniversaries")}
-        >
-          <AnniversariesPreview userId={user.id} />
-        </SectionCard>
+          <SectionCard
+            title="오늘의 할 일 (Top 3)"
+            subtitle="하루에 중요한 3가지는 꼭 실천하세요"
+            actionLabel="할 일 관리"
+            onAction={() => onNavigate("todos")}
+          >
+            <TodosPreview userId={user.id} />
+          </SectionCard>
 
-        <SectionCard
-          title="주요 뉴스"
-          subtitle="세상의 흐름을 빠르게 확인하세요"
-          
-          actionLabel="뉴스 보기"
-          onAction={() => onNavigate("news")}
-        >
-          <div className="text-sm text-slate-700">
-            <NewsFeed
-              feeds={[
-                "https://www.hankyung.com/feed/economy",
-                "https://www.hankyung.com/feed/finance",
-                "https://biz.chosun.com/rss.xml",
-                "https://www.mk.co.kr/rss/30100041/",
-                "https://www.edaily.co.kr/rss/news/economy.xml",
-              ]}
-              limit={6}
-            />
-          </div>
-        </SectionCard>
+          <SectionCard
+            title="기념일 챙기기"
+            subtitle="소중한 사람의 기념일을 꼭 챙기세요"
+            actionLabel="기념일 관리"
+            onAction={() => onNavigate("anniversaries")}
+          >
+            <AnniversariesPreview userId={user.id} />
+          </SectionCard>
 
-        <SectionCard
-          title="안부·연락처"
-          subtitle="오늘 한통의 안부를 전해보세요"
-          
-          actionLabel="연락처 관리"
-          onAction={() => onNavigate("contacts")}
-        >
-          <div className="text-sm [&_h2]:hidden [&_h3]:hidden [&_button]:text-[11px] [&_button]:px-2 [&_button]:py-1">
-            <CarePing />
-          </div>
-          <p className="mt-2 text-xs text-slate-500">
-            팁: 미연락 기간/중요도/다가오는 기념일 기준으로 추천돼요.
-          </p>
-        </SectionCard>
+          <SectionCard
+            title="주요 뉴스"
+            subtitle="세상의 흐름을 빠르게 확인하세요"
+            actionLabel="뉴스 보기"
+            onAction={() => onNavigate("news")}
+          >
+            <div className="text-sm text-slate-700">
+              <NewsFeed
+                feeds={[
+                  "https://www.hankyung.com/feed/economy",
+                  "https://www.hankyung.com/feed/finance",
+                  "https://biz.chosun.com/rss.xml",
+                  "https://www.mk.co.kr/rss/30100041/",
+                  "https://www.edaily.co.kr/rss/news/economy.xml",
+                ]}
+                limit={6}
+              />
+            </div>
+          </SectionCard>
 
-        <SectionCard
-          title="리워드 미션"
-          subtitle="도전하고 보상을 받으세요"
-          
-          actionLabel="미션 보기"
-          onAction={() => onNavigate("mission")}
-        >
-          <p className="text-sm text-slate-700">
-            7일 연속 완료 시 스탬프가 쌓입니다 🎁
-            <br />
-            <span className="text-xs text-slate-500">3개 모이면 커피 쿠폰 자동 지급!</span>
-          </p>
-        </SectionCard>
+          <SectionCard
+            title="안부·연락처"
+            subtitle="오늘 한통의 안부를 전해보세요"
+            actionLabel="연락처 관리"
+            onAction={() => onNavigate("contacts")}
+          >
+            <div className="text-sm [&_h2]:hidden [&_h3]:hidden [&_button]:text-[11px] [&_button]:px-2 [&_button]:py-1">
+              <CarePing />
+            </div>
+            <p className="mt-2 text-xs text-slate-500">팁: 미연락 기간/중요도/다가오는 기념일 기준으로 추천돼요.</p>
+          </SectionCard>
 
-        <SectionCard
-          title="나의 버킷리스트"
-          subtitle="꿈을 적으면 현실이 됩니다"
-          
-          actionLabel="버킷 관리"
-          onAction={() => onNavigate("bucket")}
-        >
-          <BucketPreview userId={user.id} />
-        </SectionCard>
+          <SectionCard
+            title="리워드 미션"
+            subtitle="도전하고 보상을 받으세요"
+            actionLabel="미션 보기"
+            onAction={() => onNavigate("mission")}
+          >
+            <p className="text-sm text-slate-700">
+              7일 연속 완료 시 스탬프가 쌓입니다 🎁
+              <br />
+              <span className="text-xs text-slate-500">3개 모이면 커피 쿠폰 자동 지급!</span>
+            </p>
+          </SectionCard>
 
-        <SectionCard
-          title="감사일기"
-          subtitle="오늘도 감사한 마음을 기록하세요"
-          
-          actionLabel="감사일기 보기"
-          onAction={() => onNavigate("gratitude")}
-        >
-          <GratitudePreview userId={user.id} />
-        </SectionCard>
+          <SectionCard
+            title="나의 버킷리스트"
+            subtitle="꿈을 적으면 현실이 됩니다"
+            actionLabel="버킷 관리"
+            onAction={() => onNavigate("bucket")}
+          >
+            <BucketPreview userId={user.id} />
+          </SectionCard>
+
+          <SectionCard
+            title="감사일기"
+            subtitle="오늘도 감사한 마음을 기록하세요"
+            actionLabel="감사일기 보기"
+            onAction={() => onNavigate("gratitude")}
+          >
+            <GratitudePreview userId={user.id} />
+          </SectionCard>
+        </div>
       </div>
-    </div>
-      </PageShell>
+    </PageShell>
   );
 }

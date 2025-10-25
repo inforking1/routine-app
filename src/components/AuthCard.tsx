@@ -210,7 +210,7 @@ export default function AuthCard() {
         {mode === "signup" && "회원가입"}
         {mode === "reset" && "비밀번호 재설정"}
       </h2>
-      <p className="mt-1 text-sm text-slate-600">짧고 정확한 건강 루틴, 지금 시작해 보세요.</p>
+      <p className="mt-1 text-sm text-slate-600">성공을 위한 필수 루틴, 지금 시작해 보세요.</p>
 
       {msg && <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-emerald-700 text-sm">{msg}</p>}
       {err && <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-rose-700 text-sm">{err}</p>}
