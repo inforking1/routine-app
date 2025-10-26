@@ -1,77 +1,113 @@
 // src/pages/AuthCallback.tsx
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 
+/** 해시(#)가 두 번일 때도 동작: 마지막 # 뒤만 파싱 */
+function readHashParams(): Record<string, string> {
+  const raw = window.location.href; // 전체 URL
+  const frag = raw.includes("#") ? raw.slice(raw.lastIndexOf("#") + 1) : "";
+  const params = new URLSearchParams(frag);
+  const obj: Record<string, string> = {};
+  params.forEach((v, k) => (obj[k] = v));
+  return obj;
+}
+
+/** onAuthStateChange(or 즉시 getSession)으로 '실제 세션 로드'가 확인될 때까지 대기 */
+function waitForSession(timeoutMs = 2000) {
+  return new Promise<boolean>((resolve) => {
+    let settled = false;
+
+    const done = (ok: boolean) => {
+      if (!settled) {
+        settled = true;
+        resolve(ok);
+      }
+    };
+
+    // 1) 이벤트 대기
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (session) {
+        sub.subscription.unsubscribe();
+        done(true);
+      }
+    });
+
+    // 2) 이미 세션이 생긴 상황(이벤트 선발행) 대비: 즉시 확인
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        sub.subscription.unsubscribe();
+        done(true);
+      }
+    });
+
+    // 3) 안전 타임아웃
+    setTimeout(async () => {
+      const { data } = await supabase.auth.getSession();
+      sub.subscription.unsubscribe();
+      done(!!data.session);
+    }, timeoutMs);
+  });
+}
+
 export default function AuthCallback() {
-  const [msg, setMsg] = useState("로그인 처리 중…");
+  const navigate = useNavigate();
 
   useEffect(() => {
-    let cancelled = false;
+    let mounted = true;
 
     (async () => {
       try {
-        // 0) Hash에 access_token이 붙은(Implicit) 케이스 우선 처리
-        // 예: #/auth/callback#access_token=...&refresh_token=...
-        const rawHash = window.location.hash || "";
-        if (rawHash.includes("access_token=")) {
-          // 마지막 # 뒤의 "access_token=...&refresh_token=..." 부분만 추출
-          const frag = rawHash.slice(rawHash.lastIndexOf("#") + 1);
-          const sp = new URLSearchParams(frag);
-          const access_token = sp.get("access_token");
-          const refresh_token = sp.get("refresh_token");
+        // 1) 해시에서 액세스 토큰 직접 추출 (HashRouter 환경 대응)
+        const h = readHashParams();
+        const access_token = h["access_token"];
+        const refresh_token = h["refresh_token"];
 
-          if (access_token && refresh_token) {
-            const { error } = await supabase.auth.setSession({ access_token, refresh_token });
-            if (error) throw error;
-
-            // 토큰이 주소에 남지 않도록 정리
-            const origin = window.location.origin;
-            const base = (import.meta as any).env?.BASE_URL || "/";
-            const clean = `${origin}${base}#/auth/callback`;
-            window.history.replaceState({}, "", clean);
+        // 2) 토큰이 있으면 setSession, 없으면 PKCE 코드 교환 시도
+        if (access_token && refresh_token) {
+          const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+          if (error) {
+            console.warn("[callback] setSession error:", error.message);
+          }
+        } else {
+          // PKCE(code) 플로우로 들어온 경우 대응 (쿼리스트링 기반)
+          const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+          if (error) {
+            // 코드가 없거나 실패해도, 이 시점에서 바로 /auth로 보내지 않고
+            // 아래 waitForSession 결과를 보고 최종 판단(루프 방지)
+            console.warn("[callback] exchangeCodeForSession error:", error.message);
           }
         }
 
-        // 1) PKCE 케이스( ?code=... )도 대응 (href 전체를 넘겨 처리하는 게 가장 안전)
-        if (window.location.href.includes("?code=") && "exchangeCodeForSession" in supabase.auth) {
-          // @ts-ignore - 런타임에서 존재
-          await supabase.auth.exchangeCodeForSession(window.location.href);
+        // 3) ✅ 여기서 '세션이 실제로 로드될 때까지' 대기 — 이동 금지
+        const ok = await waitForSession(2500);
 
-          // 주소창 정리
-          const origin = window.location.origin;
-          const base = (import.meta as any).env?.BASE_URL || "/";
-          const clean = `${origin}${base}#/auth/callback`;
-          window.history.replaceState({}, "", clean);
+        if (!mounted) return;
+
+        // 4) 최종 이동 (성공/실패 모두 window.location.replace로 통일)
+        if (ok) {
+          window.location.replace("#/");        // 홈
+        } else {
+          window.location.replace("#/auth");    // 로그인 화면
         }
-
-        // 2) 최종 세션 확인
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        if (!data.session) {
-          setMsg("세션을 찾지 못했습니다. 다시 로그인 해 주세요.");
-          return;
-        }
-
-        if (cancelled) return;
-
-        // 3) 로그인 전에 저장한 next 경로가 있으면 우선
-        const raw = sessionStorage.getItem("post_login_next") || "/";
-        sessionStorage.removeItem("post_login_next");
-
-        // 해시 라우팅 이동
-        const cleaned = raw.replace(/^\/+/, "");
-        window.location.hash = cleaned ? `#/${cleaned}` : "#/";
-      } catch (e: any) {
-        setMsg(e?.message ?? "로그인 처리 중 오류가 발생했습니다.");
+      } catch (e) {
+        console.warn("[callback] exception:", e);
+        if (!mounted) return;
+        window.location.replace("#/auth");
       }
     })();
 
-    return () => { cancelled = true; };
-  }, []);
+    return () => {
+      mounted = false;
+    };
+  }, [navigate]);
 
   return (
-    <div className="mx-auto mt-24 max-w-sm rounded-2xl border p-6 text-sm text-slate-600">
-      {msg}
+    <div className="grid min-h-[60vh] place-content-center">
+      <div className="mx-auto text-center">
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+        <p className="mt-3 text-sm text-slate-500">로그인 처리 중…</p>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 // src/App.tsx
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, Navigate, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import useAuth from "./hooks/useAuth";
 import AuthCallback from "./pages/AuthCallback";
@@ -88,7 +88,6 @@ function AuthScreen() {
       <div className="mx-auto max-w-md px-4 py-6">
         <div className="mb-4 text-center">
           <h1 className="text-2xl font-bold tracking-tight">성공을 부르는 루틴</h1>
-          <p className="mt-1 text-slate-500 text-sm">당신의 루틴을 시작하세요.</p>
         </div>
         <div id="auth-card" className="mx-auto">
           <AuthCard />
@@ -98,6 +97,42 @@ function AuthScreen() {
         </p>
       </div>
     </div>
+  );
+}
+
+/** 🔒 비로그인 레이아웃: TopNav + 컨테이너  */
+function UnauthedLayout({ isStandalone }: { isStandalone: boolean }) {
+  return (
+    <>
+      <TopNav />
+      <div className="mx-auto max-w-6xl px-4 pt-4 md:px-6 md:pt-6">
+        <Outlet />
+        {/* PWA 안내 박스 (설치 상태 아닐 때만) */}
+        {!isStandalone && (
+          <div className="mt-2 mx-auto w-full max-w-sm flex flex-col items-center rounded-2xl border border-gray-200 bg-white/60 p-3 shadow-sm backdrop-blur-md">
+            <p className="mb-1 text-center text-sm text-gray-700 leading-snug">
+              설치하시면 <span className="font-semibold text-blue-600">앱처럼 편리하게</span> 사용하실 수 있어요.
+            </p>
+            <InstallPWAButton />
+          </div>
+        )}
+        <div className={isStandalone ? "mt-3" : "mt-2"}>
+          <GuideInline />
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** 🔐 로그인 레이아웃: TopNav + 컨테이너 */
+function AuthedLayout() {
+  return (
+    <>
+      <TopNav />
+      <div className="mx-auto max-w-6xl p-5 md:p-8">
+        <Outlet />
+      </div>
+    </>
   );
 }
 
@@ -128,58 +163,44 @@ export default function App() {
     navigate(map[view] ?? "/");
   };
 
+  // ✅ 초기 세션 동기화 완료 전에는 어떤 레이아웃도 렌더하지 않음 (레이스 차단)
   if (!ready) {
     return (
-      <>
-        <TopNav />
-        <div className="grid min-h-[60vh] place-content-center">
-          <div className="mx-auto text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
-            <p className="mt-3 text-sm text-slate-500">계정 확인 중…</p>
-          </div>
+      <div className="grid min-h-[60vh] place-content-center">
+        <div className="mx-auto text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+          <p className="mt-3 text-sm text-slate-500">계정 확인 중…</p>
         </div>
-      </>
-    );
-  }
-
-  // ✅ 비로그인 상태에도 /auth/callback 라우트를 열어둔다
-  if (!user) {
-    return (
-      <>
-        <TopNav />
-        <div className="mx-auto max-w-6xl px-4 pt-4 md:px-6 md:pt-6">
-          <Routes>
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route
-              path="*"
-              element={
-                <>
-                  <AuthScreen />
-                  {!isStandalone && (
-                    <div className="mt-2 mx-auto w-full max-w-sm flex flex-col items-center rounded-2xl border border-gray-200 bg-white/60 p-3 shadow-sm backdrop-blur-md">
-                      <p className="mb-1 text-center text-sm text-gray-700 leading-snug">
-                        설치하시면 <span className="font-semibold text-blue-600">앱처럼 편리하게</span> 사용하실 수 있어요.
-                      </p>
-                      <InstallPWAButton />
-                    </div>
-                  )}
-                  <div className={isStandalone ? "mt-3" : "mt-2"}>
-                    <GuideInline />
-                  </div>
-                </>
-              }
-            />
-          </Routes>
-        </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <TopNav />
-      <div className="mx-auto max-w-6xl p-5 md:p-8">
-        <Routes>
+    <Routes>
+      {/*
+        ✅ 콜백은 최상단에서 '단독 렌더'
+        - TopNav/컨테이너/기타 라우팅이 함께 렌더되지 않도록 격리
+        - 여기서 AuthCallback 내부가 세션을 확정시킨 뒤 홈으로 이동
+      */}
+      <Route path="/auth/callback" element={<AuthCallback />} />
+
+      {/* 비로그인 영역 */}
+      {!user && (
+        <Route element={<UnauthedLayout isStandalone={isStandalone} />}>
+          <Route
+            path="*"
+            element={
+              <div className="mb-2">
+                <AuthScreen />
+              </div>
+            }
+          />
+        </Route>
+      )}
+
+      {/* 로그인 영역 */}
+      {user && (
+        <Route element={<AuthedLayout />}>
           <Route path="/roles" element={<RoleManagementPage onHome={() => navigate("/")} />} />
           <Route path="/o/mission-console" element={<AdminMissionsPage />} />
           <Route path="/guide" element={<RoutineGuidePage />} />
@@ -199,12 +220,11 @@ export default function App() {
           <Route path="/community" element={<CommunityPage onHome={() => navigate("/")} />} />
           <Route path="/settings" element={<SettingsPage onHome={() => navigate("/")} />} />
           <Route path="/pledges" element={<PledgesPage onBack={() => navigate("/")} />} />
-          {/* 로그인 상태에서의 콜백 라우트도 유지(안전) */}
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/auth" element={<AuthScreen />} />
+          {/* 로그인 상태에서 /auth는 홈으로 돌려보냄 */}
+          <Route path="/auth" element={<Navigate to="/" replace />} />
           <Route path="*" element={<div className="p-6 text-slate-600">페이지를 찾을 수 없습니다.</div>} />
-        </Routes>
-      </div>
-    </>
+        </Route>
+      )}
+    </Routes>
   );
 }
