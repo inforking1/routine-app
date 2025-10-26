@@ -24,5 +24,3 @@ if (!globalThis.__supabase__) globalThis.__supabase__ = supabase;
 
 // 👇 전역 any 래퍼 “sb”를 같이 export (핫픽스 핵심)
 export const sb = supabase as any;
-
-if (typeof window !== "undefined") (window as any).supabase = supabase;
