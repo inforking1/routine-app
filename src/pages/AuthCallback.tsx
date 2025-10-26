@@ -10,13 +10,41 @@ export default function AuthCallback() {
 
     (async () => {
       try {
-        // PKCE 코드 교환이 필요한 경우를 대비 (대부분 auto-detect지만 안전장치)
-        if ("exchangeCodeForSession" in supabase.auth) {
-          // @ts-ignore - 런타임에 존재
-          await supabase.auth.exchangeCodeForSession();
+        // 0) Hash에 access_token이 붙은(Implicit) 케이스 우선 처리
+        // 예: #/auth/callback#access_token=...&refresh_token=...
+        const rawHash = window.location.hash || "";
+        if (rawHash.includes("access_token=")) {
+          // 마지막 # 뒤의 "access_token=...&refresh_token=..." 부분만 추출
+          const frag = rawHash.slice(rawHash.lastIndexOf("#") + 1);
+          const sp = new URLSearchParams(frag);
+          const access_token = sp.get("access_token");
+          const refresh_token = sp.get("refresh_token");
+
+          if (access_token && refresh_token) {
+            const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+            if (error) throw error;
+
+            // 토큰이 주소에 남지 않도록 정리
+            const origin = window.location.origin;
+            const base = (import.meta as any).env?.BASE_URL || "/";
+            const clean = `${origin}${base}#/auth/callback`;
+            window.history.replaceState({}, "", clean);
+          }
         }
 
-        // 세션 확인
+        // 1) PKCE 케이스( ?code=... )도 대응 (href 전체를 넘겨 처리하는 게 가장 안전)
+        if (window.location.href.includes("?code=") && "exchangeCodeForSession" in supabase.auth) {
+          // @ts-ignore - 런타임에서 존재
+          await supabase.auth.exchangeCodeForSession(window.location.href);
+
+          // 주소창 정리
+          const origin = window.location.origin;
+          const base = (import.meta as any).env?.BASE_URL || "/";
+          const clean = `${origin}${base}#/auth/callback`;
+          window.history.replaceState({}, "", clean);
+        }
+
+        // 2) 최종 세션 확인
         const { data, error } = await supabase.auth.getSession();
         if (error) throw error;
         if (!data.session) {
@@ -26,7 +54,7 @@ export default function AuthCallback() {
 
         if (cancelled) return;
 
-        // 로그인 전에 저장한 next 가져오기
+        // 3) 로그인 전에 저장한 next 경로가 있으면 우선
         const raw = sessionStorage.getItem("post_login_next") || "/";
         sessionStorage.removeItem("post_login_next");
 
