@@ -2,32 +2,45 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 /** -----------------------------------------------------------
- *  URL builder: 원하는 경로/쿼리를 그대로 반영해서 절대 URL 생성
+ *  HashRouter용 콜백 URL 빌더 (GitHub Pages 서브패스+해시)
+ *  결과: {origin}{BASE}#/{path}?...
  * ----------------------------------------------------------*/
-function buildRedirect(path: string, params?: Record<string, string | number | boolean | undefined | null>) {
+function buildHashRedirect(
+  path: string,
+  params?: Record<string, string | number | boolean | undefined | null>
+) {
   if (typeof window === "undefined") return undefined;
   const origin = window.location.origin;
   const base = (import.meta as any).env?.BASE_URL || "/";
-  const cleaned = path.replace(/^\//, ""); // 선행 "/" 제거
-  const url = new URL(origin + base + cleaned);
+  const cleaned = path.replace(/^\//, "");
+  const usp = new URLSearchParams();
   if (params) {
     for (const [k, v] of Object.entries(params)) {
-      if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
+      if (v !== undefined && v !== null) usp.set(k, String(v));
     }
   }
-  return url.toString();
+  const qs = usp.toString();
+  return `${origin}${base}#/${cleaned}${qs ? `?${qs}` : ""}`;
 }
 
 /** 로그인 후 이동 처리: URL ?next=, sessionStorage('post_login_next') 우선 사용 */
-function afterEmailFlow(fallback: string = "/") {
+function afterEmailFlow() {
   if (typeof window === "undefined") return;
+  const origin = window.location.origin;
+  const base = (import.meta as any).env?.BASE_URL || "/";
   const url = new URL(window.location.href);
   const nextFromQuery = url.searchParams.get("next");
   const nextFromSS = sessionStorage.getItem("post_login_next");
-  const target = nextFromQuery || nextFromSS || fallback;
-  // 한번 사용한 next는 소모
+  const rawTarget = nextFromQuery || nextFromSS || "";
   if (nextFromSS) sessionStorage.removeItem("post_login_next");
-  window.location.assign(target);
+
+  // 상대 경로/빈값이면 홈(#/)로 보냄, 절대 URL이면 그대로 사용
+  const isAbsolute = /^https?:\/\//i.test(rawTarget);
+  const destination = isAbsolute
+    ? rawTarget
+    : `${origin}${base}#/${rawTarget.replace(/^#?\//, "")}`;
+
+  window.location.assign(destination);
 }
 
 type Mode = "signin" | "signup" | "reset";
@@ -81,9 +94,8 @@ export default function AuthCard() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
-      afterEmailFlow("/");
+      afterEmailFlow();
     } catch (e: any) {
-      // 흔한 에러 한국어 매핑
       const msg =
         e?.status === 400 ? "이메일 또는 비밀번호를 확인해 주세요." :
         e?.status === 429 ? "잠시 후 다시 시도해 주세요. (요청이 너무 많습니다)" :
@@ -102,7 +114,7 @@ export default function AuthCard() {
         setErr("비밀번호 확인이 일치하지 않습니다.");
         return;
       }
-      const emailRedirectTo = buildRedirect("auth/callback", { mode: "verify" });
+      const emailRedirectTo = buildHashRedirect("auth/callback", { mode: "verify" });
       const { error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -125,7 +137,7 @@ export default function AuthCard() {
     e?.preventDefault();
     setErr(null); setMsg(null); setBusy(true);
     try {
-      const redirectTo = buildRedirect("auth/callback", { mode: "reset" });
+      const redirectTo = buildHashRedirect("auth/callback", { mode: "reset" });
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
       if (error) throw error;
       setMsg("비밀번호 재설정 메일을 보냈습니다. 메일의 링크로 이동해 새 비밀번호를 설정하세요.");
@@ -141,13 +153,12 @@ export default function AuthCard() {
   async function handleGoogle() {
     try {
       setErr(null); setMsg(null); setBusy(true);
-      // 현재 화면의 ?next=를 세션에 보관 (이미 저장되어 있으면 그대로 유지)
       if (typeof window !== "undefined") {
         const u = new URL(window.location.href);
         const qNext = u.searchParams.get("next");
         if (qNext) sessionStorage.setItem("post_login_next", qNext);
       }
-      const redirectTo = buildRedirect("auth/callback", { provider: "google" });
+      const redirectTo = buildHashRedirect("auth/callback"); // ✅ 해시 콜백
       await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -155,7 +166,7 @@ export default function AuthCard() {
           queryParams: { prompt: "select_account" },
         },
       });
-      // 이후는 리디렉트되므로 로컬 처리 없음
+      // redirect 발생
     } catch (e: any) {
       setBusy(false);
       setErr(e?.message || "Google 로그인 중 오류가 발생했습니다.");
@@ -174,19 +185,17 @@ export default function AuthCard() {
     }
   }
 
-  // 이미 로그인된 경우: 간단한 프로필 카드
   if (userEmail) {
     return (
       <div className="w-full max-w-md mx-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-slate-900">로그인 상태</h2>
-          <p className="text-sm text-slate-600 mt-1">{userEmail}</p>
         </div>
         {msg && <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-emerald-700 text-sm">{msg}</p>}
         {err && <p className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-rose-700 text-sm">{err}</p>}
         <div className="flex gap-2">
           <button
-            onClick={() => afterEmailFlow("/")}
+            onClick={afterEmailFlow}
             className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             홈으로

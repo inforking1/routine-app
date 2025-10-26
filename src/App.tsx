@@ -28,7 +28,7 @@ type View =
   | "bucket" | "gratitude" | "mission" | "contacts" | "community"
   | "settings" | "pledges";
 
-/* 가이드 섹션: 상단 여백 살짝 줄임 */
+/* 가이드 섹션 */
 function GuideInline() {
   return (
     <section className="mt-3 grid gap-3">
@@ -106,12 +106,11 @@ export default function App() {
   const { user, ready } = useAuth();
   const [meditationNote, setMeditationNote] = useState<string>("");
 
-  // ✅ PWA 설치 상태 감지 → 설치 패널 자동 숨김(여백도 사라짐)
+  // ✅ PWA 설치 상태 감지
   const [isStandalone, setIsStandalone] = useState(false);
   useEffect(() => {
     const check = () =>
       window.matchMedia?.("(display-mode: standalone)")?.matches ||
-      // iOS Safari
       (window as any).navigator?.standalone === true;
     setIsStandalone(check());
     const onInstalled = () => setIsStandalone(true);
@@ -143,27 +142,34 @@ export default function App() {
     );
   }
 
+  // ✅ 비로그인 상태에도 /auth/callback 라우트를 열어둔다
   if (!user) {
     return (
       <>
         <TopNav />
-        {/* ✅ 수정 후 — 간격 완전 압축 */}
         <div className="mx-auto max-w-6xl px-4 pt-4 md:px-6 md:pt-6">
-          <AuthScreen />
-
-        {!isStandalone && (
-          <div className="mt-2 mx-auto w-full max-w-sm flex flex-col items-center rounded-2xl border border-gray-200 bg-white/60 p-3 shadow-sm backdrop-blur-md">
-            <p className="mb-1 text-center text-sm text-gray-700 leading-snug">
-              설치하시면 <span className="font-semibold text-blue-600">앱처럼 편리하게</span> 사용하실 수 있어요.
-            </p>
-            <InstallPWAButton />
-          </div>
-        )}
-
-          {/* 가이드 섹션과의 간격 최소화 */}
-          <div className={`${isStandalone ? "mt-3" : "mt-2"}`}>
-            <GuideInline />
-          </div>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route
+              path="*"
+              element={
+                <>
+                  <AuthScreen />
+                  {!isStandalone && (
+                    <div className="mt-2 mx-auto w-full max-w-sm flex flex-col items-center rounded-2xl border border-gray-200 bg-white/60 p-3 shadow-sm backdrop-blur-md">
+                      <p className="mb-1 text-center text-sm text-gray-700 leading-snug">
+                        설치하시면 <span className="font-semibold text-blue-600">앱처럼 편리하게</span> 사용하실 수 있어요.
+                      </p>
+                      <InstallPWAButton />
+                    </div>
+                  )}
+                  <div className={isStandalone ? "mt-3" : "mt-2"}>
+                    <GuideInline />
+                  </div>
+                </>
+              }
+            />
+          </Routes>
         </div>
       </>
     );
@@ -193,8 +199,9 @@ export default function App() {
           <Route path="/community" element={<CommunityPage onHome={() => navigate("/")} />} />
           <Route path="/settings" element={<SettingsPage onHome={() => navigate("/")} />} />
           <Route path="/pledges" element={<PledgesPage onBack={() => navigate("/")} />} />
-          <Route path="/auth" element={<AuthScreen />} />
+          {/* 로그인 상태에서의 콜백 라우트도 유지(안전) */}
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/auth" element={<AuthScreen />} />
           <Route path="*" element={<div className="p-6 text-slate-600">페이지를 찾을 수 없습니다.</div>} />
         </Routes>
       </div>
