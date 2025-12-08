@@ -1,7 +1,7 @@
 // src/App.tsx
 import { Routes, Route, useNavigate, Navigate, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
-import useAuth from "./hooks/useAuth";
+import useAuth, { AuthProvider } from "./hooks/useAuth";
 import AuthCallback from "./pages/AuthCallback";
 import InstallPWAButton from "./components/InstallPWAButton";
 import TopNav from "./components/TopNav";
@@ -136,7 +136,8 @@ function AuthedLayout() {
   );
 }
 
-export default function App() {
+/* 실제 앱 라우팅 로직 */
+function AppContent() {
   const navigate = useNavigate();
   const { user, ready } = useAuth();
   const [meditationNote, setMeditationNote] = useState<string>("");
@@ -226,5 +227,13 @@ export default function App() {
         </Route>
       )}
     </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

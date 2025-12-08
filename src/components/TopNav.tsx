@@ -1,71 +1,47 @@
 // src/components/TopNav.tsx
 import { NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import useAuth from "../hooks/useAuth";
 import { supabase } from "../lib/supabaseClient";
 
 export default function TopNav() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState<string | null>(null);
+  // ✅ useAuth 컨텍스트 사용
+  const { user } = useAuth();
 
-  // ▼ 모바일 토글/데스크톱 호버 모두 지원
+  // 상태 동기화 useEffect 제거하고 직접 파생 (Render-time derivation)
+  const authed = !!user;
+  const email = user?.email ?? null;
+  const displayName = user ? (
+    user.user_metadata?.name ||
+    user.user_metadata?.full_name ||
+    user.email?.split("@")[0] || null
+  ) : null;
+
+  // ▼ 심플한 클릭 토글 방식 (Hover 제거)
   const [moreOpen, setMoreOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isTouch = typeof window !== "undefined"
-    ? window.matchMedia?.("(hover: none) and (pointer: coarse)")?.matches ?? false
-    : false;
 
-  const openMenu = () => {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-    setMoreOpen(true);
-  };
-  const scheduleClose = (ms = 180) => {
-    if (isTouch) return; // 모바일은 자동 닫힘 방지
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    closeTimer.current = setTimeout(() => {
-      setMoreOpen(false);
-      closeTimer.current = null;
-    }, ms);
-  };
-
-  useEffect(() => {
-    let mounted = true;
-    const init = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!mounted) return;
-      const user = data.user;
-      setEmail(user?.email ?? null);
-      setDisplayName(
-        (user?.user_metadata?.name ||
-          user?.user_metadata?.full_name ||
-          user?.email?.split("@")[0]) ?? null
-      );
-    };
-    init();
-    const { data: sub } = supabase.auth.onAuthStateChange(async () => {
-      await init();
-    });
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-      if (closeTimer.current) clearTimeout(closeTimer.current);
-    };
-  }, []);
-
-  // 모바일: 바깥을 터치하면 닫힘
+  // 메뉴 바깥 클릭 감지
   useEffect(() => {
     if (!moreOpen) return;
-    const onDown = (e: PointerEvent) => {
-      if (!menuRef.current) return;
-      if (!menuRef.current.contains(e.target as Node)) setMoreOpen(false);
+    const onClickOutside = (e: Event) => {
+      // 메뉴 내부 클릭이면 닫지 않음 (단, Link 클릭 시엔 Link 내부에서 닫음 처리)
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
     };
-    document.addEventListener("pointerdown", onDown, { capture: true });
-    return () => document.removeEventListener("pointerdown", onDown, { capture: true } as any);
+    // pointerdown 대신 mousedown/touchstart 사용 (호환성)
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("touchstart", onClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("touchstart", onClickOutside);
+    };
   }, [moreOpen]);
+
+  const toggleMenu = () => setMoreOpen((prev) => !prev);
+  const closeMenu = () => setMoreOpen(false);
 
   const iconBtn =
     "inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs md:text-sm text-slate-700 hover:bg-slate-50";
@@ -77,7 +53,7 @@ export default function TopNav() {
   const tabLocked = "opacity-60 cursor-pointer";
 
   const goOrAuth = (to: string) => {
-    if (email) navigate(to);
+    if (authed) navigate(to);
     else navigate(`/auth?next=${encodeURIComponent(to)}`);
   };
 
@@ -93,8 +69,6 @@ export default function TopNav() {
         {children}
       </NavLink>
     );
-
-  const authed = !!email;
 
   return (
     <nav className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -144,17 +118,10 @@ export default function TopNav() {
           <Tab to="/contacts" locked={!authed}>안부</Tab>
 
           {/* 더보기 */}
-          <div
-            ref={menuRef}
-            className="relative ml-1"
-            {...(!isTouch ? {
-              onPointerEnter: openMenu,
-              onPointerLeave: () => scheduleClose(200),
-            } : {})}
-          >
+          <div ref={menuRef} className="relative ml-1">
             <button
-              className={`${tabBase} ${tabIdle}`}
-              onClick={() => (moreOpen ? setMoreOpen(false) : openMenu())}
+              className={`${tabBase} ${moreOpen ? "bg-slate-100 ring-2 ring-slate-200" : tabIdle}`}
+              onClick={toggleMenu}
               aria-haspopup="menu"
               aria-expanded={moreOpen}
             >
@@ -162,40 +129,43 @@ export default function TopNav() {
             </button>
 
             {moreOpen && (
-              <>
-                {!isTouch && (
-                  <div aria-hidden className="absolute left-0 top-full h-1 w-full" onPointerEnter={openMenu} onPointerLeave={() => scheduleClose(200)} />
+              <div
+                role="menu"
+                className="absolute left-0 top-[calc(100%+4px)] z-50 min-w-[220px] origin-top-left animate-in fade-in slide-in-from-top-1 rounded-2xl border border-slate-300 bg-white p-2 text-sm shadow-xl"
+              >
+                {[
+                  ["/meditation", "🧘 명상"],
+                  ["/anniversaries", "🎉 기념일"],
+                  ["/news", "📰 뉴스"],
+                  ["/mission", "🎯 미션·혜택"],
+                  ["/bucket", "⭐ 버킷리스트"],
+                  ["/gratitude", "🙏 감사일기"],
+                  ["/community", "🗣️ 커뮤니티"],
+                ].map(([to, label]) =>
+                  authed ? (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      className="block rounded-xl px-3 py-2 hover:bg-slate-50"
+                      onClick={closeMenu}
+                    >
+                      {label}
+                    </NavLink>
+                  ) : (
+                    <button
+                      key={to}
+                      className="block w-full rounded-xl px-3 py-2 text-left text-slate-600 hover:bg-slate-50"
+                      onClick={() => {
+                        closeMenu();
+                        goOrAuth(to);
+                      }}
+                      title="로그인 후 이용 가능"
+                    >
+                      🔒 {label}
+                    </button>
+                  )
                 )}
-                <div
-                  role="menu"
-                  className="absolute left-0 top-[calc(100%+4px)] z-50 min-w-[220px] rounded-2xl border border-slate-300 bg-white p-2 text-sm shadow-xl"
-                >
-                  {[
-                    ["/meditation", "🧘 명상"],
-                    ["/anniversaries", "🎉 기념일"],
-                    ["/news", "📰 뉴스"],
-                    ["/mission", "🎯 미션·혜택"],
-                    ["/bucket", "⭐ 버킷리스트"],
-                    ["/gratitude", "🙏 감사일기"],
-                    ["/community", "🗣️ 커뮤니티"],
-                  ].map(([to, label]) =>
-                    authed ? (
-                      <NavLink key={to} to={to} className="block rounded-xl px-3 py-1.5 hover:bg-slate-50" onClick={() => setMoreOpen(false)}>
-                        {label}
-                      </NavLink>
-                    ) : (
-                      <button
-                        key={to}
-                        className="block w-full rounded-xl px-3 py-1.5 text-left text-slate-600 hover:bg-slate-50"
-                        onClick={() => { setMoreOpen(false); goOrAuth(to); }}
-                        title="로그인 후 이용 가능"
-                      >
-                        🔒 {label}
-                      </button>
-                    )
-                  )}
-                </div>
-              </>
+              </div>
             )}
           </div>
         </div>

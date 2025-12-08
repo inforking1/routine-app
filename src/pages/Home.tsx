@@ -54,8 +54,8 @@ function TodosPreview({ userId }: { userId?: string }) {
       r.sort((a, b) => {
         if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
         return (
-    
-a.order ?? 0) - (b.order ?? 0);
+
+          a.order ?? 0) - (b.order ?? 0);
       });
       setItems(r);
     })();
@@ -257,32 +257,9 @@ function GratitudePreview({ userId }: { userId: string }) {
 type HomeProps = { onNavigate: (v: View) => void };
 
 export default function Home({ onNavigate }: HomeProps) {
-  const auth = useAuth() as any;
-  const user = auth?.user ?? null;
-  const ready: boolean = (auth?.ready ?? false) as boolean;
-
-  const [bootReady, setBootReady] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (!bootReady) {
-      const t = window.setTimeout(() => setBootReady(true), 2000);
-      return () => window.clearTimeout(t);
-    }
-  }, [bootReady]);
-
-  useEffect(() => {
-    // useAuth 훅이 늦게 ready를 올리더라도, 홈에서 1회 세션 확인 후 전진
-    if (auth?.ready) {
-      setBootReady(true);
-      return;
-    }
-    (async () => {
-      await supabase.auth.getSession(); // 실패/성공 상관없이 화면 고착 방지
-      setBootReady(true);
-    })();
-  }, [auth?.ready]);
-
-  const isReady = ready || bootReady;
+  // ✅ useAuth 컨텍스트 덕분에 추가적인 getSession 불필요
+  const { user, ready } = useAuth();
+  const isReady = ready; // 컨텍스트에서 이미 초기 로드 보장
 
   if (!isReady) {
     return (
@@ -300,8 +277,8 @@ export default function Home({ onNavigate }: HomeProps) {
         <SectionCard
           title="시작하기"
           subtitle="로그인 후 개인화 데이터가 표시됩니다"
-          
-          >
+
+        >
 
           <div id="auth-card">
             <AuthCard />

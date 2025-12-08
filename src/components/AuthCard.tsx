@@ -1,10 +1,8 @@
+// === src/components/AuthCard.tsx ===
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
-/** -----------------------------------------------------------
- *  HashRouter용 콜백 URL 빌더 (GitHub Pages 서브패스+해시)
- *  결과: {origin}{BASE}#/{path}?...
- * ----------------------------------------------------------*/
+/** HashRouter + GitHub Pages용 콜백 URL 빌더 */
 function buildHashRedirect(
   path: string,
   params?: Record<string, string | number | boolean | undefined | null>
@@ -23,24 +21,23 @@ function buildHashRedirect(
   return `${origin}${base}#/${cleaned}${qs ? `?${qs}` : ""}`;
 }
 
-/** 로그인 후 이동 처리: URL ?next=, sessionStorage('post_login_next') 우선 사용 */
+/** 로그인 후 이동 처리: ?next 또는 sessionStorage("post_login_next") */
 function afterEmailFlow() {
   if (typeof window === "undefined") return;
   const origin = window.location.origin;
   const base = (import.meta as any).env?.BASE_URL || "/";
-  const url = new URL(window.location.href);
-  const nextFromQuery = url.searchParams.get("next");
-  const nextFromSS = sessionStorage.getItem("post_login_next");
-  const rawTarget = nextFromQuery || nextFromSS || "";
-  if (nextFromSS) sessionStorage.removeItem("post_login_next");
+  const u = new URL(window.location.href);
+  const qNext = u.searchParams.get("next");
+  const ssNext = sessionStorage.getItem("post_login_next");
+  const rawTarget = qNext || ssNext || "";
+  if (ssNext) sessionStorage.removeItem("post_login_next");
 
-  // 상대 경로/빈값이면 홈(#/)로 보냄, 절대 URL이면 그대로 사용
-  const isAbsolute = /^https?:\/\//i.test(rawTarget);
-  const destination = isAbsolute
+  const isAbs = /^https?:\/\//i.test(rawTarget);
+  const dest = isAbs
     ? rawTarget
-    : `${origin}${base}#/${rawTarget.replace(/^#?\//, "")}`;
+    : `${origin}${base}#/${rawTarget.replace(/^#?\//, "") || ""}`;
 
-  window.location.assign(destination);
+  window.location.assign(dest);
 }
 
 type Mode = "signin" | "signup" | "reset";
@@ -55,7 +52,7 @@ export default function AuthCard() {
   const [err, setErr] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // 최초 진입 시 URL의 ?next= 값을 세션에 저장 (OAuth 이후 사용)
+  // 로그인 전 ?next= 유지
   useEffect(() => {
     if (typeof window === "undefined") return;
     const u = new URL(window.location.href);
@@ -96,11 +93,11 @@ export default function AuthCard() {
       if (error) throw error;
       afterEmailFlow();
     } catch (e: any) {
-      const msg =
+      const m =
         e?.status === 400 ? "이메일 또는 비밀번호를 확인해 주세요." :
-        e?.status === 429 ? "잠시 후 다시 시도해 주세요. (요청이 너무 많습니다)" :
-        e?.message || "로그인 중 오류가 발생했습니다.";
-      setErr(msg);
+        e?.status === 429 ? "잠시 후 다시 시도해 주세요. (요청 과다)" :
+        e?.message || "로그인 오류가 발생했습니다.";
+      setErr(m);
     } finally {
       setBusy(false);
     }
@@ -124,10 +121,10 @@ export default function AuthCard() {
       setMsg("가입 메일을 보냈습니다. 받은 편지함(스팸 포함)을 확인하고 이메일 인증을 완료해 주세요.");
       setMode("signin");
     } catch (e: any) {
-      const msg =
+      const m =
         e?.status === 409 ? "이미 가입된 이메일입니다. 로그인 또는 비밀번호 재설정을 이용해 주세요." :
         e?.message || "회원가입 중 오류가 발생했습니다.";
-      setErr(msg);
+      setErr(m);
     } finally {
       setBusy(false);
     }
@@ -143,8 +140,7 @@ export default function AuthCard() {
       setMsg("비밀번호 재설정 메일을 보냈습니다. 메일의 링크로 이동해 새 비밀번호를 설정하세요.");
       setMode("signin");
     } catch (e: any) {
-      const msg = e?.message || "재설정 메일 발송 중 오류가 발생했습니다.";
-      setErr(msg);
+      setErr(e?.message || "재설정 메일 발송 중 오류가 발생했습니다.");
     } finally {
       setBusy(false);
     }

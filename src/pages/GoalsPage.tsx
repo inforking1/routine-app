@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import PageShell from "../components/PageShell";
 import SectionCard from "../components/SectionCard";
 import { supabase } from "../lib/supabaseClient";
+import useAuth from "../hooks/useAuth";
 
 // 기존 스타일 유지: sb 별칭
 const sb = supabase as any;
@@ -59,16 +60,23 @@ export default function GoalsPage({ onHome }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   /** ------- Load ------- */
+  const { user, ready } = useAuth();
+
+  /** ------- Load ------- */
   useEffect(() => {
+    if (!ready) return; // 아직 로드 중이면 대기
+    if (!user) {
+      // 로그인 안된 상태면 로딩 끄고 에러 처리하거나 리다이렉트 (여기선 목록 빈배열)
+      setLoading(false);
+      return;
+    }
+
     let alive = true;
     (async () => {
       setError(null);
       setLoading(true);
       try {
-        // ✅ 세션 확인(없으면 goal_picks는 100% permission denied)
-        const { data: session } = await supabase.auth.getSession();
-        const uid = session?.session?.user?.id;
-        if (!uid) throw new Error("로그인이 필요합니다.");
+        const uid = user.id;
 
         // goals: 항상 본인 것만
         const { data: goalsData, error: goalsErr } = await sb
@@ -83,7 +91,7 @@ export default function GoalsPage({ onHome }: Props) {
           .from("goal_picks")
           .select("term,goal_id")
           .eq("user_id", uid);
-        if (picksErr) throw picksErr; // 여기서 막히면 DB 정책/GRANT 문제
+        if (picksErr) throw picksErr;
 
         if (!alive) return;
         setItems((goalsData ?? []) as Goal[]);
@@ -100,7 +108,7 @@ export default function GoalsPage({ onHome }: Props) {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [ready, user]); // user가 바뀌면 재로딩
 
   /** ------- Derived ------- */
   const filtered = useMemo(() => items.filter((g) => g.term === activeTerm), [items, activeTerm]);
@@ -118,26 +126,29 @@ export default function GoalsPage({ onHome }: Props) {
   /** ------- Submit ------- */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      setError("로그인이 필요합니다.");
+      return;
+    }
+
     const trimmed = text.trim();
     if (!trimmed) return;
 
     try {
-      const { data: session } = await supabase.auth.getSession();
-      const uid = session?.session?.user?.id;
-      if (!uid) throw new Error("로그인이 필요합니다.");
+      const uid = user.id;
 
       if (editingId) {
         const backup = items;
         const next = items.map((g) =>
           g.id === editingId
             ? {
-                ...g,
-                text: trimmed,
-                term,
-                progress: clamp(progress, 0, 100),
-                start_date: startDate || null,
-                end_date: endDate || null,
-              }
+              ...g,
+              text: trimmed,
+              term,
+              progress: clamp(progress, 0, 100),
+              start_date: startDate || null,
+              end_date: endDate || null,
+            }
             : g
         );
         setItems(next);
@@ -210,9 +221,8 @@ export default function GoalsPage({ onHome }: Props) {
     const backup = items;
     setItems((prev) => prev.filter((g) => g.id !== id));
     try {
-      const { data: session } = await supabase.auth.getSession();
-      const uid = session?.session?.user?.id;
-      if (uid) {
+      if (user) {
+        const uid = user.id;
         // 홈 표시 중이었다면 goal_picks도 정리
         const removed = backup.find((g) => g.id === id);
         if (removed && picks[removed.term] === id) {
@@ -234,10 +244,10 @@ export default function GoalsPage({ onHome }: Props) {
   /** ------- Pick for Home ------- */
   const setHomePick = async (term: Term, goalId: string | null) => {
     try {
+      if (!user) throw new Error("로그인이 필요합니다.");
+      const uid = user.id;
+
       setSavingPick(term);
-      const { data: session } = await supabase.auth.getSession();
-      const uid = session?.session?.user?.id;
-      if (!uid) throw new Error("로그인이 필요합니다.");
 
       if (goalId) {
         const { error } = await sb
@@ -321,11 +331,10 @@ export default function GoalsPage({ onHome }: Props) {
                 setActiveTerm(t);
                 if (editingId == null) setTerm(t);
               }}
-              className={`rounded-full border px-3 py-1 text-sm ${
-                activeTerm === t
+              className={`rounded-full border px-3 py-1 text-sm ${activeTerm === t
                   ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                   : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
-              }`}
+                }`}
             >
               {TERM_LABEL[t]}
             </button>
