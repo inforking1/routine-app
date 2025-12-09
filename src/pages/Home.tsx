@@ -292,54 +292,78 @@ export default function Home({ onNavigate }: HomeProps) {
 
   return (
     <PageShell showHeader={false}>
-      <div className="mx-auto max-w-3xl xl:max-w-6xl space-y-6">
-        {/* 상단 인사 배너 ... */}
-        <MindTrigger className="mb-4 md:mb-5 xl:mb-6" onManage={() => onNavigate("pledges")} />
+      <div className="mx-auto max-w-3xl xl:max-w-6xl space-y-8 pb-10">
+        {/* 상단 인사 배너 */}
+        <MindTrigger className="mb-6 shadow-sm border-slate-200" onManage={() => onNavigate("pledges")} />
 
-        {/* ✅ 여기 클래스만 변경: SectionCard 내부 h3(제목) 타이포 강화 */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 items-start
-                        [&_h3]:text-lg md:[&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-slate-900">
+        {/* 그리드 레이아웃: 섹션 간 구분감 강화 (높이 통일을 위해 items-stretch) */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 items-stretch">
+
+          {/* 1. 목표 (Blue) */}
           <SectionCard
             title="나의 목표"
             subtitle="목표를 명확히 하고, 한걸음 더 실천하세요"
             actionLabel="목표 관리"
             onAction={() => onNavigate("goals")}
+            color="blue"
           >
             <GoalsPreview userId={user.id} />
           </SectionCard>
 
-          <SectionCard
-            title="오늘의 명상"
-            subtitle="잠시 멈추고, 명상을 자신의 삶에 대입해보세요"
-            actionLabel="명상 보기"
-            onAction={() => onNavigate("meditation")}
-          >
-            <MeditationOfTheDay variant="inline" className="mt-1" />
-          </SectionCard>
-
+          {/* 2. 할 일 (Green/Emerald) */}
           <SectionCard
             title="오늘의 할 일 (Top 3)"
             subtitle="하루에 중요한 3가지는 꼭 실천하세요"
             actionLabel="할 일 관리"
             onAction={() => onNavigate("todos")}
+            color="emerald"
           >
             <TodosPreview userId={user.id} />
           </SectionCard>
 
+          {/* 3. 명상 (Purple) */}
+          <SectionCard
+            title="오늘의 명상"
+            subtitle="잠시 멈추고, 명상을 자신의 삶에 대입해보세요"
+            actionLabel="명상 보기"
+            onAction={() => onNavigate("meditation")}
+            color="purple"
+          >
+            <MeditationOfTheDay variant="inline" className="mt-1" />
+          </SectionCard>
+
+          {/* 4. 기념일 (Rose) */}
           <SectionCard
             title="기념일 챙기기"
             subtitle="소중한 사람의 기념일을 꼭 챙기세요"
             actionLabel="기념일 관리"
             onAction={() => onNavigate("anniversaries")}
+            color="rose"
           >
             <AnniversariesPreview userId={user.id} />
           </SectionCard>
 
+          {/* 5. 안부/연락처 (Orange) */}
+          <SectionCard
+            title="안부·연락처"
+            subtitle="오늘 한통의 안부를 전해보세요"
+            actionLabel="연락처 관리"
+            onAction={() => onNavigate("contacts")}
+            color="orange"
+          >
+            <div className="text-sm [&_h2]:hidden [&_h3]:hidden [&_button]:text-[11px] [&_button]:px-2 [&_button]:py-1">
+              <CarePing />
+            </div>
+            <p className="mt-2 text-xs text-slate-500 opacity-80">팁: 미연락 기간/중요도/다가오는 기념일 기준</p>
+          </SectionCard>
+
+          {/* 6. 뉴스 (Slate) */}
           <SectionCard
             title="주요 뉴스"
             subtitle="세상의 흐름을 빠르게 확인하세요"
             actionLabel="뉴스 보기"
             onAction={() => onNavigate("news")}
+            color="slate"
           >
             <div className="text-sm text-slate-700">
               <NewsFeed
@@ -355,45 +379,40 @@ export default function Home({ onNavigate }: HomeProps) {
             </div>
           </SectionCard>
 
-          <SectionCard
-            title="안부·연락처"
-            subtitle="오늘 한통의 안부를 전해보세요"
-            actionLabel="연락처 관리"
-            onAction={() => onNavigate("contacts")}
-          >
-            <div className="text-sm [&_h2]:hidden [&_h3]:hidden [&_button]:text-[11px] [&_button]:px-2 [&_button]:py-1">
-              <CarePing />
-            </div>
-            <p className="mt-2 text-xs text-slate-500">팁: 미연락 기간/중요도/다가오는 기념일 기준으로 추천돼요.</p>
-          </SectionCard>
-
+          {/* 7. 리워드 미션 (Yellow) */}
           <SectionCard
             title="리워드 미션"
             subtitle="도전하고 보상을 받으세요"
             actionLabel="미션 보기"
             onAction={() => onNavigate("mission")}
+            color="yellow"
           >
-            <p className="text-sm text-slate-700">
-              7일 연속 완료 시 스탬프가 쌓입니다 🎁
-              <br />
-              <span className="text-xs text-slate-500">3개 모이면 커피 쿠폰 자동 지급!</span>
+            <p className="text-sm text-slate-800 font-medium">
+              🎁 7일 연속 완료 시 스탬프 적립
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              3개 모이면 커피 쿠폰 자동 지급! 현재 미션 진행 중...
             </p>
           </SectionCard>
 
+          {/* 8. 버킷리스트 (Sky) */}
           <SectionCard
             title="나의 버킷리스트"
             subtitle="꿈을 적으면 현실이 됩니다"
             actionLabel="버킷 관리"
             onAction={() => onNavigate("bucket")}
+            color="sky"
           >
             <BucketPreview userId={user.id} />
           </SectionCard>
 
+          {/* 9. 감사일기 (Green/Lime -> Green으로 통일감) */}
           <SectionCard
             title="감사일기"
             subtitle="오늘도 감사한 마음을 기록하세요"
             actionLabel="감사일기 보기"
             onAction={() => onNavigate("gratitude")}
+            color="green"
           >
             <GratitudePreview userId={user.id} />
           </SectionCard>

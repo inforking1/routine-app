@@ -136,11 +136,19 @@ function AuthedLayout() {
   );
 }
 
+import { useBackExit } from "./hooks/useBackExit";
+import ExitToast from "./components/ExitToast";
+
+// ... imports ...
+
 /* 실제 앱 라우팅 로직 */
 function AppContent() {
   const navigate = useNavigate();
   const { user, ready } = useAuth();
   const [meditationNote, setMeditationNote] = useState<string>("");
+
+  // ✅ 뒤로가기 로직 (Hook)
+  const { showExitToast, closeToast } = useBackExit();
 
   // ✅ PWA 설치 상태 감지
   const [isStandalone, setIsStandalone] = useState(false);
@@ -177,56 +185,61 @@ function AppContent() {
   }
 
   return (
-    <Routes>
-      {/*
-        ✅ 콜백은 최상단에서 '단독 렌더'
-        - TopNav/컨테이너/기타 라우팅이 함께 렌더되지 않도록 격리
-        - 여기서 AuthCallback 내부가 세션을 확정시킨 뒤 홈으로 이동
-      */}
-      <Route path="/auth/callback" element={<AuthCallback />} />
+    <>
+      {/* 2번 뒤로가기 종료 토스트 */}
+      {showExitToast && <ExitToast onClose={closeToast} />}
 
-      {/* 비로그인 영역 */}
-      {!user && (
-        <Route element={<UnauthedLayout isStandalone={isStandalone} />}>
-          <Route
-            path="*"
-            element={
-              <div className="mb-2">
-                <AuthScreen />
-              </div>
-            }
-          />
-        </Route>
-      )}
+      <Routes>
+        {/*
+          ✅ 콜백은 최상단에서 '단독 렌더'
+          - TopNav/컨테이너/기타 라우팅이 함께 렌더되지 않도록 격리
+          - 여기서 AuthCallback 내부가 세션을 확정시킨 뒤 홈으로 이동
+        */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
-      {/* 로그인 영역 */}
-      {user && (
-        <Route element={<AuthedLayout />}>
-          <Route path="/roles" element={<RoleManagementPage onHome={() => navigate("/")} />} />
-          <Route path="/o/mission-console" element={<AdminMissionsPage />} />
-          <Route path="/guide" element={<RoutineGuidePage />} />
-          <Route path="/" element={<Home onNavigate={go} />} />
-          <Route path="/goals" element={<GoalsPage onHome={() => navigate("/")} />} />
-          <Route
-            path="/meditation"
-            element={<MeditationPage note={meditationNote} setNote={setMeditationNote} onHome={() => navigate("/")} />}
-          />
-          <Route path="/todos" element={<TodosPage onHome={() => navigate("/")} />} />
-          <Route path="/anniversaries" element={<AnniversariesPage onHome={() => navigate("/")} />} />
-          <Route path="/contacts" element={<ContactsPage onHome={() => navigate("/")} />} />
-          <Route path="/news" element={<NewsPage onHome={() => navigate("/")} />} />
-          <Route path="/mission" element={<MissionPage onHome={() => navigate("/")} />} />
-          <Route path="/bucket" element={<BucketList onHome={() => navigate("/")} />} />
-          <Route path="/gratitude" element={<Gratitude onHome={() => navigate("/")} />} />
-          <Route path="/community" element={<CommunityPage onHome={() => navigate("/")} />} />
-          <Route path="/settings" element={<SettingsPage onHome={() => navigate("/")} />} />
-          <Route path="/pledges" element={<PledgesPage onBack={() => navigate("/")} />} />
-          {/* 로그인 상태에서 /auth는 홈으로 돌려보냄 */}
-          <Route path="/auth" element={<Navigate to="/" replace />} />
-          <Route path="*" element={<div className="p-6 text-slate-600">페이지를 찾을 수 없습니다.</div>} />
-        </Route>
-      )}
-    </Routes>
+        {/* 비로그인 영역 */}
+        {!user && (
+          <Route element={<UnauthedLayout isStandalone={isStandalone} />}>
+            <Route
+              path="*"
+              element={
+                <div className="mb-2">
+                  <AuthScreen />
+                </div>
+              }
+            />
+          </Route>
+        )}
+
+        {/* 로그인 영역 */}
+        {user && (
+          <Route element={<AuthedLayout />}>
+            <Route path="/roles" element={<RoleManagementPage onHome={() => navigate("/")} />} />
+            <Route path="/o/mission-console" element={<AdminMissionsPage />} />
+            <Route path="/guide" element={<RoutineGuidePage />} />
+            <Route path="/" element={<Home onNavigate={go} />} />
+            <Route path="/goals" element={<GoalsPage onHome={() => navigate("/")} />} />
+            <Route
+              path="/meditation"
+              element={<MeditationPage note={meditationNote} setNote={setMeditationNote} onHome={() => navigate("/")} />}
+            />
+            <Route path="/todos" element={<TodosPage onHome={() => navigate("/")} />} />
+            <Route path="/anniversaries" element={<AnniversariesPage onHome={() => navigate("/")} />} />
+            <Route path="/contacts" element={<ContactsPage onHome={() => navigate("/")} />} />
+            <Route path="/news" element={<NewsPage onHome={() => navigate("/")} />} />
+            <Route path="/mission" element={<MissionPage onHome={() => navigate("/")} />} />
+            <Route path="/bucket" element={<BucketList onHome={() => navigate("/")} />} />
+            <Route path="/gratitude" element={<Gratitude onHome={() => navigate("/")} />} />
+            <Route path="/community" element={<CommunityPage onHome={() => navigate("/")} />} />
+            <Route path="/settings" element={<SettingsPage onHome={() => navigate("/")} />} />
+            <Route path="/pledges" element={<PledgesPage onBack={() => navigate("/")} />} />
+            {/* 로그인 상태에서 /auth는 홈으로 돌려보냄 */}
+            <Route path="/auth" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<div className="p-6 text-slate-600">페이지를 찾을 수 없습니다.</div>} />
+          </Route>
+        )}
+      </Routes>
+    </>
   );
 }
 
