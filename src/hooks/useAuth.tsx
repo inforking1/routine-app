@@ -1,17 +1,23 @@
 import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from "react";
-import type { Session, User } from "@supabase/supabase-js";
+import type { Session, User, AuthError } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
 
 type AuthState = {
   ready: boolean;
   session: Session | null;
   user: User | null;
+  signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null; data: { user: User | null } }>;
+  signOut: () => Promise<{ error: AuthError | null }>;
 };
 
 const AuthContext = createContext<AuthState>({
   ready: false,
   session: null,
   user: null,
+  signInWithEmail: async () => ({ error: null }),
+  signUpWithEmail: async () => ({ error: null, data: { user: null } }),
+  signOut: async () => ({ error: null }),
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -37,7 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (!mounted) return;
       setSession(newSession ?? null);
-      // 이벤트가 발생했다는 것 자체가 로드 완료 의미를 내포함
       setReady(true);
     });
 
@@ -47,11 +52,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const signInWithEmail = async (email: string, password: string) => {
+    return await supabase.auth.signInWithPassword({ email, password });
+  };
+
+  const signUpWithEmail = async (email: string, password: string) => {
+    // 해시 라우터 지원을 위해 콜백 URL 명시
+    const redirectUrl = window.location.origin + (import.meta.env.BASE_URL || "/") + "#/auth/callback";
+    return await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: redirectUrl },
+    });
+  };
+
+  const signOut = async () => {
+    return await supabase.auth.signOut();
+  };
+
   const value = useMemo(
     () => ({
       ready,
       session,
       user: session?.user ?? null,
+      signInWithEmail,
+      signUpWithEmail,
+      signOut,
     }),
     [ready, session]
   );

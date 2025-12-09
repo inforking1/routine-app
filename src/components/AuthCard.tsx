@@ -1,27 +1,17 @@
 // === src/components/AuthCard.tsx ===
 import { useEffect, useMemo, useState } from "react";
+import useAuth from "../hooks/useAuth";
 import { supabase } from "../lib/supabaseClient";
 
-/** HashRouter + GitHub Pages용 콜백 URL 빌더 */
-function buildHashRedirect(
-  path: string,
-  params?: Record<string, string | number | boolean | undefined | null>
-) {
+/** 로그인 처리를 위한 헬퍼 */
+function buildHashRedirect(path: string) {
   if (typeof window === "undefined") return undefined;
   const origin = window.location.origin;
   const base = (import.meta as any).env?.BASE_URL || "/";
-  const cleaned = path.replace(/^\//, "");
-  const usp = new URLSearchParams();
-  if (params) {
-    for (const [k, v] of Object.entries(params)) {
-      if (v !== undefined && v !== null) usp.set(k, String(v));
-    }
-  }
-  const qs = usp.toString();
-  return `${origin}${base}#/${cleaned}${qs ? `?${qs}` : ""}`;
+  // hash routing
+  return `${origin}${base}#/${path.replace(/^\//, "")}`;
 }
 
-/** 로그인 후 이동 처리: ?next 또는 sessionStorage("post_login_next") */
 function afterEmailFlow() {
   if (typeof window === "undefined") return;
   const origin = window.location.origin;
@@ -33,26 +23,32 @@ function afterEmailFlow() {
   if (ssNext) sessionStorage.removeItem("post_login_next");
 
   const isAbs = /^https?:\/\//i.test(rawTarget);
+  // 해시 라우터 기반 이동
   const dest = isAbs
     ? rawTarget
-    : `${origin}${base}#/${rawTarget.replace(/^#?\//, "") || ""}`;
+    : `${origin}${base}#/${rawTarget.replace(/^#?\//, "")}`;
 
   window.location.assign(dest);
 }
 
+// 이메일 정규식 (간단 버전)
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 type Mode = "signin" | "signup" | "reset";
 
 export default function AuthCard() {
+  const { signInWithEmail, signUpWithEmail, signOut, user } = useAuth();
+
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
+
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // 로그인 전 ?next= 유지
+  // 로그인 전 ?next= 파라미터 저장
   useEffect(() => {
     if (typeof window === "undefined") return;
     const u = new URL(window.location.href);
@@ -60,146 +56,141 @@ export default function AuthCard() {
     if (qNext) sessionStorage.setItem("post_login_next", qNext);
   }, []);
 
-  // 세션 구독
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
-      setUserEmail(data.session?.user?.email ?? null);
-    })();
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUserEmail(session?.user?.email ?? null);
-    });
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
+  // 유효성 상태 계산
+  const isValidEmail = useMemo(() => EMAIL_REGEX.test(email.trim()), [email]);
+  const isValidPw = password.length >= 6;
+  const isPwMatch = password === password2;
 
   const canSubmit = useMemo(() => {
     if (busy) return false;
-    if (mode === "signin") return email.trim().length > 3 && password.length >= 6;
-    if (mode === "signup") return email.trim().length > 3 && password.length >= 6 && password === password2;
-    if (mode === "reset") return email.trim().length > 3;
-    return false;
-  }, [busy, mode, email, password, password2]);
+    if (!isValidEmail) return false;
+    if (mode === "reset") return true;
+    // signin/signup
+    if (!isValidPw) return false;
+    if (mode === "signup" && !isPwMatch) return false;
+    return true;
+  }, [busy, mode, isValidEmail, isValidPw, isPwMatch]);
 
-  async function handleSignIn(e?: React.FormEvent) {
-    e?.preventDefault();
-    setErr(null); setMsg(null); setBusy(true);
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+
+    setErr(null);
+    setMsg(null);
+    setBusy(true);
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const { error } = await signInWithEmail(email.trim(), password);
       if (error) throw error;
+      // 성공 시 리다이렉트
       afterEmailFlow();
     } catch (e: any) {
-      const m =
-        e?.status === 400 ? "이메일 또는 비밀번호를 확인해 주세요." :
-        e?.status === 429 ? "잠시 후 다시 시도해 주세요. (요청 과다)" :
-        e?.message || "로그인 오류가 발생했습니다.";
-      setErr(m);
+      if (e?.message?.includes("Invalid login credentials")) {
+        setErr("이메일 또는 비밀번호가 일치하지 않습니다.");
+      } else {
+        setErr(e?.message || "로그인 중 오류가 발생했습니다.");
+      }
     } finally {
       setBusy(false);
     }
-  }
+  };
 
-  async function handleSignUp(e?: React.FormEvent) {
-    e?.preventDefault();
-    setErr(null); setMsg(null); setBusy(true);
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+
+    setErr(null);
+    setMsg(null);
+    setBusy(true);
+
     try {
-      if (password !== password2) {
-        setErr("비밀번호 확인이 일치하지 않습니다.");
-        return;
+      const { error } = await signUpWithEmail(email.trim(), password);
+      if (error) throw error;
+      setMsg("가입 확인 메일이 전송되었습니다. 메일함(스팸 포함)을 확인해주세요.");
+      setMode("signin");
+    } catch (e: any) {
+      if (e?.message?.includes("already registered")) {
+        setErr("이미 가입된 이메일입니다.");
+      } else {
+        setErr(e?.message || "회원가입 중 오류가 발생했습니다.");
       }
-      const emailRedirectTo = buildHashRedirect("auth/callback", { mode: "verify" });
-      const { error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: { emailRedirectTo },
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isValidEmail) return;
+
+    setErr(null);
+    setMsg(null);
+    setBusy(true);
+
+    try {
+      const redirectTo = buildHashRedirect("auth/callback");
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo,
       });
       if (error) throw error;
-      setMsg("가입 메일을 보냈습니다. 받은 편지함(스팸 포함)을 확인하고 이메일 인증을 완료해 주세요.");
+      setMsg("비밀번호 재설정 메일을 보냈습니다.");
       setMode("signin");
     } catch (e: any) {
-      const m =
-        e?.status === 409 ? "이미 가입된 이메일입니다. 로그인 또는 비밀번호 재설정을 이용해 주세요." :
-        e?.message || "회원가입 중 오류가 발생했습니다.";
-      setErr(m);
+      setErr(e?.message || "요청 중 오류가 발생했습니다.");
     } finally {
       setBusy(false);
     }
-  }
+  };
 
-  async function handleReset(e?: React.FormEvent) {
-    e?.preventDefault();
-    setErr(null); setMsg(null); setBusy(true);
+  const handleGoogle = async () => {
+    setErr(null);
+    setMsg(null);
+    setBusy(true);
     try {
-      const redirectTo = buildHashRedirect("auth/callback", { mode: "reset" });
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
-      if (error) throw error;
-      setMsg("비밀번호 재설정 메일을 보냈습니다. 메일의 링크로 이동해 새 비밀번호를 설정하세요.");
-      setMode("signin");
-    } catch (e: any) {
-      setErr(e?.message || "재설정 메일 발송 중 오류가 발생했습니다.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleGoogle() {
-    try {
-      setErr(null); setMsg(null); setBusy(true);
-      if (typeof window !== "undefined") {
-        const u = new URL(window.location.href);
-        const qNext = u.searchParams.get("next");
-        if (qNext) sessionStorage.setItem("post_login_next", qNext);
-      }
-      const redirectTo = buildHashRedirect("auth/callback"); // ✅ 해시 콜백
-      await supabase.auth.signInWithOAuth({
+      const redirectTo = buildHashRedirect("auth/callback");
+      // ?next 처리를 위해 현재 URL 파라미터 저장 로직은 useEffect가 수행했음
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo,
           queryParams: { prompt: "select_account" },
         },
       });
-      // redirect 발생
+      if (error) throw error;
     } catch (e: any) {
       setBusy(false);
-      setErr(e?.message || "Google 로그인 중 오류가 발생했습니다.");
+      setErr(e?.message || "Google 로그인 실패");
     }
-  }
+  };
 
-  async function handleSignOut() {
-    setErr(null); setMsg(null); setBusy(true);
+  const handleSignOut = async () => {
+    setBusy(true);
     try {
-      await supabase.auth.signOut();
-      setMsg("로그아웃 되었어요.");
-    } catch (e: any) {
-      setErr(e?.message || "로그아웃 중 오류가 발생했습니다.");
+      await signOut();
+    } catch (e) {
+      console.error(e);
     } finally {
       setBusy(false);
     }
-  }
+  };
 
-  if (userEmail) {
+  // 이미 로그인 된 상태라면?
+  if (user) {
     return (
-      <div className="w-full max-w-md mx-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-slate-900">로그인 상태</h2>
-        </div>
-        {msg && <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-emerald-700 text-sm">{msg}</p>}
-        {err && <p className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-rose-700 text-sm">{err}</p>}
-        <div className="flex gap-2">
+      <div className="w-full max-w-md mx-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-sm text-center">
+        <h2 className="text-xl font-bold text-slate-900 mb-2">이미 로그인되었습니다</h2>
+        <p className="text-slate-600 mb-4">{user.email}</p>
+        <div className="flex gap-2 justify-center">
           <button
-            onClick={afterEmailFlow}
-            className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            onClick={() => afterEmailFlow()}
+            className="rounded-xl bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 transition"
           >
-            홈으로
+            홈으로 이동
           </button>
           <button
             onClick={handleSignOut}
             disabled={busy}
-            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+            className="rounded-xl border border-slate-300 px-4 py-2 hover:bg-slate-50 transition"
           >
             로그아웃
           </button>
@@ -210,135 +201,150 @@ export default function AuthCard() {
 
   return (
     <div className="w-full max-w-md mx-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">
+      <h2 className="text-xl font-bold text-slate-900 mb-1">
         {mode === "signin" && "로그인"}
         {mode === "signup" && "회원가입"}
         {mode === "reset" && "비밀번호 재설정"}
       </h2>
-      <p className="mt-1 text-sm text-slate-600">성공을 위한 필수 루틴, 지금 시작해 보세요.</p>
+      <p className="text-sm text-slate-500 mb-6">성공을 위한 루틴, 오늘부터 시작하세요.</p>
 
-      {msg && <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-emerald-700 text-sm">{msg}</p>}
-      {err && <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-rose-700 text-sm">{err}</p>}
-
-      <form
-        onSubmit={
-          mode === "signin" ? handleSignIn :
-          mode === "signup" ? handleSignUp :
-          handleReset
-        }
-        className="mt-5 space-y-3"
-      >
-        <div>
-          <label className="block text-sm font-medium text-slate-700">이메일</label>
-          <input
-            type="email"
-            autoComplete="email"
-            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+      {/* 메시지 영역 */}
+      {msg && (
+        <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {msg}
         </div>
+      )}
+      {err && (
+        <div className="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {err}
+        </div>
+      )}
 
-        {mode !== "reset" && (
+      {/* 폼 영역 */}
+      <form onSubmit={mode === "signin" ? handleSignIn : mode === "signup" ? handleSignUp : handleReset}>
+        <div className="space-y-4">
+
+          {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-slate-700">비밀번호</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">이메일</label>
             <input
-              type="password"
-              autoComplete={mode === "signin" ? "current-password" : "new-password"}
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-              placeholder="6자 이상"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={6}
-              required
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@email.com"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/10 placeholder:text-slate-400 transition"
+              disabled={busy}
+            // autoFocus
             />
+            {email && !isValidEmail && (
+              <p className="mt-1 text-xs text-rose-500">올바른 이메일 형식이 아닙니다.</p>
+            )}
+          </div>
+
+          {/* Password (Reset 모드 제외) */}
+          {mode !== "reset" && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">비밀번호</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="6자 이상 입력"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/10 placeholder:text-slate-400 transition"
+                disabled={busy}
+              />
+            </div>
+          )}
+
+          {/* Password Confirm (Signup 모드만) */}
+          {mode === "signup" && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">비밀번호 확인</label>
+              <input
+                type="password"
+                value={password2}
+                onChange={(e) => setPassword2(e.target.value)}
+                placeholder="비밀번호 다시 입력"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/10 placeholder:text-slate-400 transition"
+                disabled={busy}
+              />
+              {password2 && !isPwMatch && (
+                <p className="mt-1 text-xs text-rose-500">비밀번호가 일치하지 않습니다.</p>
+              )}
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={!canSubmit || busy}
+            className="w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+          >
+            {busy ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                처리 중...
+              </span>
+            ) : (
+              mode === "signin" ? "로그인" : mode === "signup" ? "회원가입" : "이메일 전송"
+            )}
+          </button>
+
+          {/* Social Login (Reset 모드 제외) */}
+          {mode !== "reset" && (
+            <button
+              type="button"
+              onClick={handleGoogle}
+              disabled={busy}
+              className="w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+            >
+              Google로 계속하기
+            </button>
+          )}
+
+        </div>
+      </form>
+
+      {/* Mode Switcher */}
+      <div className="mt-6 flex flex-col gap-2 text-center text-sm text-slate-600">
+        {mode === "signin" && (
+          <div className="flex flex-col gap-2 mt-2">
+            <div className="flex justify-start">
+              <button
+                onClick={() => setMode("reset")}
+                className="py-2 text-sm text-slate-500 hover:text-slate-800 hover:underline"
+              >
+                비밀번호를 잊으셨나요?
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between py-2 text-sm text-slate-600">
+              <span>아직 계정이 없으신가요?</span>
+              <button
+                onClick={() => setMode("signup")}
+                className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                가입하기
+              </button>
+            </div>
           </div>
         )}
 
         {mode === "signup" && (
-          <div>
-            <label className="block text-sm font-medium text-slate-700">비밀번호 확인</label>
-            <input
-              type="password"
-              autoComplete="new-password"
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-              placeholder="비밀번호를 다시 입력"
-              value={password2}
-              onChange={(e) => setPassword2(e.target.value)}
-              minLength={6}
-              required
-            />
-            {(password && password2 && password !== password2) && (
-              <p className="mt-1 text-xs text-rose-600">비밀번호가 일치하지 않습니다.</p>
-            )}
-          </div>
-        )}
-
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
-        >
-          {mode === "signin" && (busy ? "로그인 중..." : "이메일로 로그인")}
-          {mode === "signup" && (busy ? "가입 중..." : "이메일로 가입")}
-          {mode === "reset" && (busy ? "전송 중..." : "재설정 메일 보내기")}
-        </button>
-
-        {mode !== "reset" && (
-          <button
-            type="button"
-            onClick={handleGoogle}
-            disabled={busy}
-            className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
-          >
-            Google로 계속하기
-          </button>
-        )}
-      </form>
-
-      <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
-        {mode !== "reset" ? (
-          <button
-            type="button"
-            onClick={() => setMode("reset")}
-            className="underline-offset-4 hover:underline"
-          >
-            비밀번호를 잊으셨나요?
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setMode("signin")}
-            className="underline-offset-4 hover:underline"
-          >
-            로그인으로 돌아가기
+          <button onClick={() => setMode("signin")} className="hover:underline hover:text-slate-900">
+            이미 계정이 있으신가요? <span className="font-semibold">로그인</span>
           </button>
         )}
 
-        {mode === "signin" ? (
-          <button
-            type="button"
-            onClick={() => setMode("signup")}
-            className="underline-offset-4 hover:underline"
-          >
-            아직 계정이 없으신가요? 가입하기
+        {mode === "reset" && (
+          <button onClick={() => setMode("signin")} className="hover:underline hover:text-slate-900">
+            로그인 화면으로 돌아가기
           </button>
-        ) : mode === "signup" ? (
-          <button
-            type="button"
-            onClick={() => setMode("signin")}
-            className="underline-offset-4 hover:underline"
-          >
-            이미 계정이 있으신가요? 로그인
-          </button>
-        ) : null}
+        )}
       </div>
-
-      <p className="mt-4 text-xs text-slate-500">
-        입력 즉시 자동 저장되지 않습니다. 가입·로그인 이후 언제든 설정에서 계정 삭제가 가능합니다.
-      </p>
     </div>
   );
 }
