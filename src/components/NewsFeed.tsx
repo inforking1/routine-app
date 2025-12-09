@@ -1,6 +1,6 @@
 // src/components/NewsFeed.tsx
 import { useEffect, useState } from "react";
-import { fetchRss, RssItem } from "../utils/rss";
+import { fetchRss, type RssItem } from "../utils/rss";
 
 type Props = { feeds: string[]; limit?: number };
 
@@ -22,7 +22,7 @@ export default function NewsFeed({ feeds, limit = 20 }: Props) {
         const fresh = Date.now() - data.savedAt < 15 * 60 * 1000;
         if (fresh && data.items?.length) setItems(data.items.slice(0, limit));
       }
-    } catch {}
+    } catch { }
 
     // 2) 백그라운드 최신 데이터 가져오기
     (async () => {
@@ -32,8 +32,8 @@ export default function NewsFeed({ feeds, limit = 20 }: Props) {
 
         const settled = await Promise.allSettled(feeds.map(fetchRss));
         const merged = settled.flatMap(r => (r.status === "fulfilled" ? r.value : []))
-                              .flat()
-                              .filter(x => x.title && x.link);
+          .flat()
+          .filter(x => x.title && x.link);
 
         merged.sort((a, b) => (b.pubDate?.getTime() ?? 0) - (a.pubDate?.getTime() ?? 0));
 

@@ -1,5 +1,5 @@
 // src/components/SectionCard.tsx
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import clsx from "clsx";
 import * as ui from "./ui";
 
@@ -9,14 +9,12 @@ type Props = {
   actionLabel?: string;
   onAction?: () => void;
   className?: string;
-  children: React.ReactNode;
-  color?: string;
+  children: ReactNode;
 };
 
 export default function SectionCard({
   title,
   subtitle,
-  color,
   actionLabel,
   onAction,
   className,

@@ -6,11 +6,9 @@ import {
   type Anniversary,
 } from "../../lib/anniversariesStore";
 
-function pad2(n: number) { return String(n).padStart(2, "0"); }
-function fmtYMD(d: Date) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 function parseYMD(ymd: string) {
-  const [y,m,dd] = ymd.split("-").map((v)=>parseInt(v,10));
-  return new Date(y, (m||1)-1, dd||1);
+  const [y, m, dd] = ymd.split("-").map((v) => parseInt(v, 10));
+  return new Date(y, (m || 1) - 1, dd || 1);
 }
 function nextOccurrenceDate(ymd: string, today: Date): Date {
   const d = parseYMD(ymd);
@@ -19,7 +17,7 @@ function nextOccurrenceDate(ymd: string, today: Date): Date {
   const todayDate = new Date(y, today.getMonth(), today.getDate());
   if (d.getFullYear() > y) return d;
   if (thisYear >= todayDate) return thisYear;
-  return new Date(y+1, d.getMonth(), d.getDate());
+  return new Date(y + 1, d.getMonth(), d.getDate());
 }
 
 export default function HomeAnniversariesCard() {
@@ -43,7 +41,7 @@ export default function HomeAnniversariesCard() {
   }, [items]);
 
   return (
-    <SectionCard title="다가오는 기념일" subtitle="3개만 보여드려요" color="rose">
+    <SectionCard title="다가오는 기념일" subtitle="3개만 보여드려요">
       <ul className="text-sm divide-y divide-slate-200">
         {upcoming3.map((a) => (
           <li key={a.id} className="py-2 flex items-center gap-2">

@@ -1,13 +1,13 @@
 // src/components/PageShell.tsx
-import { ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 export default function PageShell({ title, children, onHome, showHeader = true }: { title?: string; children: ReactNode; onHome?: () => void; showHeader?: boolean; }) {
   const [session, setSession] = useState<
     | null
     | NonNullable<
-        Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]
-      >
+      Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]
+    >
   >(null);
   const [initLoading, setInitLoading] = useState(true);
 
@@ -34,22 +34,22 @@ export default function PageShell({ title, children, onHome, showHeader = true }
   return (
     <div className="grid gap-6">
       {/* ✅ SectionCard 스타일의 상단 타이틀 박스 */}
-    {showHeader && (title || onHome) && (  
-      <div className="mx-2 md:mx-0 rounded-2xl border border-slate-300 bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-          {onHome && (
-            <button
-              onClick={onHome}
-              className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-            >
-              <span>←</span>
-              <span>홈으로</span>
-            </button>
-          )}
+      {showHeader && (title || onHome) && (
+        <div className="mx-2 md:mx-0 rounded-2xl border border-slate-300 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+            {onHome && (
+              <button
+                onClick={onHome}
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <span>←</span>
+                <span>홈으로</span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-    )}  
+      )}
 
       {/* 본문 */}
       <div className="grid gap-4">

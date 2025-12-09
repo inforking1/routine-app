@@ -236,9 +236,8 @@ export default function SettingsPage({ onHome }: Props) {
           <button
             onClick={clearSelected}
             disabled={!anySelected}
-            className={`h-10 rounded-xl px-4 text-sm text-white transition-colors ${
-              anySelected ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-400"
-            }`}
+            className={`h-10 rounded-xl px-4 text-sm text-white transition-colors ${anySelected ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-400"
+              }`}
           >
             선택 삭제
           </button>
@@ -300,7 +299,7 @@ export default function SettingsPage({ onHome }: Props) {
       </SectionCard>
 
       {/* 전체 초기화(고급) */}
-      <SectionCard title="전체 초기화(고급)" subtitle="모든 데이터를 삭제합니다" color="rose" className="!h-auto !min-h-0 self-start p-3 md:p-4">
+      <SectionCard title="전체 초기화(고급)" subtitle="모든 데이터를 삭제합니다" className="!h-auto !min-h-0 self-start p-3 md:p-4">
         <p className="mb-3 text-sm text-rose-700">
           매우 위험한 작업입니다. 백업 후 진행하세요. 이중 확인 + 10초 Undo가 제공됩니다.
         </p>

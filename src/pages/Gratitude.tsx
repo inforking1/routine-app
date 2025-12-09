@@ -1,9 +1,9 @@
 // src/pages/Gratitude.tsx
-import { useEffect, useMemo, useState, FormEvent } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import PageShell from "../components/PageShell";
 import SectionCard from "../components/SectionCard";
 import useAuth from "../hooks/useAuth";
-import { createSource, Gratitude as DbGratitude } from "../utils/dataSource";
+import { createSource, type Gratitude as DbGratitude } from "../utils/dataSource";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -133,21 +133,19 @@ export default function Gratitude({ onHome }: { onHome: () => void }) {
       {/* 모바일 전용 탭: md 이상에서는 숨김 */}
       <div className="mb-3 grid grid-cols-2 gap-1 md:hidden">
         <button
-          className={`rounded-xl border px-3 py-2 text-sm ${
-            mobileTab === "write"
+          className={`rounded-xl border px-3 py-2 text-sm ${mobileTab === "write"
               ? "bg-rose-50 border-rose-200 text-rose-700"
               : "bg-white border-slate-200 text-slate-700"
-          }`}
+            }`}
           onClick={() => setMobileTab("write")}
         >
           작성
         </button>
         <button
-          className={`rounded-xl border px-3 py-2 text-sm ${
-            mobileTab === "list"
+          className={`rounded-xl border px-3 py-2 text-sm ${mobileTab === "list"
               ? "bg-rose-50 border-rose-200 text-rose-700"
               : "bg-white border-slate-200 text-slate-700"
-          }`}
+            }`}
           onClick={() => setMobileTab("list")}
         >
           기록

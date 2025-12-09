@@ -1,11 +1,11 @@
 // src/pages/TodosPage.tsx
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import PageShell from "../components/PageShell";
 import SectionCard from "../components/SectionCard";
 import AuthCard from "../components/AuthCard";
 import useAuth from "../hooks/useAuth";
 import { supabase, sb } from "../lib/supabaseClient";
-import { createSource, Todo } from "../utils/dataSource";
+import { createSource, type Todo } from "../utils/dataSource";
 
 // 날짜 유틸
 function daysBetweenToday(iso?: string | null) {
@@ -251,7 +251,6 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
         <SectionCard
           title="로그인이 필요합니다"
           subtitle="로그인 후 개인 Todo를 저장/불러옵니다"
-          color="amber"
         >
           <AuthCard />
         </SectionCard>
@@ -264,7 +263,6 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
       <SectionCard
         title="할 일(Todos)"
         subtitle="오늘 집중할 것들 관리 (드래그로 순서 변경 가능)"
-        color="amber"
       >
         {/* 입력 */}
         <form
@@ -473,15 +471,14 @@ function TodoItem({
             </span>
             {badge && (
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] ${
-                  badge === "오늘"
-                    ? "bg-red-100 text-red-600"
-                    : badge === "내일"
+                className={`rounded-full px-2 py-0.5 text-[10px] ${badge === "오늘"
+                  ? "bg-red-100 text-red-600"
+                  : badge === "내일"
                     ? "bg-amber-100 text-amber-700"
                     : badge.startsWith("D-")
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-slate-100 text-slate-600"
-                }`}
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
                 title={todo.due || undefined}
               >
                 {badge}
@@ -495,11 +492,10 @@ function TodoItem({
         <>
           <button
             onClick={onPin}
-            className={`rounded-md px-2 py-1 text-xs ${
-              todo.pinned
-                ? "text-amber-600 hover:bg-amber-50"
-                : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-            }`}
+            className={`rounded-md px-2 py-1 text-xs ${todo.pinned
+              ? "text-amber-600 hover:bg-amber-50"
+              : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              }`}
           >
             📌
           </button>

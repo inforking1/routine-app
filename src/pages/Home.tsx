@@ -10,9 +10,9 @@ import { supabase } from "../lib/supabaseClient";
 import AuthCard from "../components/AuthCard";
 import {
   createSource,
-  Todo as DbTodo,
-  Anniversary as DbAnniversary,
-  Gratitude as DbGratitude,
+  type Todo as DbTodo,
+  type Anniversary as DbAnniversary,
+  type Gratitude as DbGratitude,
 } from "../utils/dataSource";
 import type { View } from "../types";
 import PageShell from "../components/PageShell";
@@ -288,11 +288,7 @@ export default function Home({ onNavigate }: HomeProps) {
     );
   }
 
-  const displayName =
-    user?.user_metadata?.name ||
-    user?.user_metadata?.full_name ||
-    user?.email?.split("@")[0] ||
-    "사용자";
+
 
   return (
     <PageShell showHeader={false}>

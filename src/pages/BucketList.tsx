@@ -1,5 +1,5 @@
 // src/pages/BucketList.tsx
-import { useEffect, useMemo, useState, FormEvent } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
 import SectionCard from "../components/SectionCard";
 import useAuth from "../hooks/useAuth";
@@ -58,10 +58,7 @@ export default function BucketList({
     })();
   }, [user]);
 
-  const remainCanPick = useMemo(
-    () => Math.max(0, 3 - pickedIds.size),
-    [pickedIds]
-  );
+
 
   // ---- 추가 ----
   const addItem = async (title: string) => {
@@ -208,130 +205,128 @@ export default function BucketList({
           </button>
         </div>
 
-  <ul className="divide-y divide-slate-200">
-    {items.map((it) => {
-      const picked = pickedIds.has(it.id);
-      const done = !!it.done;
-      const isBusy = busyId === it.id;
-      const isEditing = editId === it.id;
+        <ul className="divide-y divide-slate-200">
+          {items.map((it) => {
+            const picked = pickedIds.has(it.id);
+            const done = !!it.done;
+            const isBusy = busyId === it.id;
+            const isEditing = editId === it.id;
 
-      const handleEditSave = async () => {
-        if (!user || !editText.trim()) {
-          setEditId(null);
-          return;
-        }
-        try {
-          await sb
-            .from("bucket_items")
-            .update({ title: editText.trim() })
-            .eq("id", it.id);
-          setItems((prev) =>
-            prev.map((p) => (p.id === it.id ? { ...p, title: editText.trim() } : p))
-          );
-          setEditId(null);
-        } catch {
-          alert("수정에 실패했습니다.");
-        }
-      };
+            const handleEditSave = async () => {
+              if (!user || !editText.trim()) {
+                setEditId(null);
+                return;
+              }
+              try {
+                await sb
+                  .from("bucket_items")
+                  .update({ title: editText.trim() })
+                  .eq("id", it.id);
+                setItems((prev) =>
+                  prev.map((p) => (p.id === it.id ? { ...p, title: editText.trim() } : p))
+                );
+                setEditId(null);
+              } catch {
+                alert("수정에 실패했습니다.");
+              }
+            };
 
-      return (
-        <li key={it.id} className="flex items-center justify-between py-2">
-          <div className="flex items-center gap-3">
-            {/* 🌟 홈표시 토글 */}
-            <button
-              onClick={() => togglePick(it.id)}
-              title={picked ? "홈 표시에서 제거" : "홈에 표시 (최대 3개)"}
-              className={`rounded-full p-1 transition-colors ${
-                picked
-                  ? "text-amber-500 hover:text-amber-600"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
-            >
-              {picked ? (
-                <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
-              ) : (
-                <StarOff className="h-5 w-5" />
-              )}
-            </button>
+            return (
+              <li key={it.id} className="flex items-center justify-between py-2">
+                <div className="flex items-center gap-3">
+                  {/* 🌟 홈표시 토글 */}
+                  <button
+                    onClick={() => togglePick(it.id)}
+                    title={picked ? "홈 표시에서 제거" : "홈에 표시 (최대 3개)"}
+                    className={`rounded-full p-1 transition-colors ${picked
+                      ? "text-amber-500 hover:text-amber-600"
+                      : "text-slate-400 hover:text-slate-600"
+                      }`}
+                  >
+                    {picked ? (
+                      <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+                    ) : (
+                      <StarOff className="h-5 w-5" />
+                    )}
+                  </button>
 
-            {/* ✅ 완료 토글 */}
-            <button
-              onClick={() => toggleItem(it.id)}
-              disabled={isBusy}
-              title={done ? "미완료로 변경" : "완료로 표시"}
-              className="p-1"
-            >
-              {done ? (
-                <CheckCircle className="h-5 w-5 text-teal-600" />
-              ) : (
-                <Circle className="h-5 w-5 text-slate-400 hover:text-teal-600" />
-              )}
-            </button>
+                  {/* ✅ 완료 토글 */}
+                  <button
+                    onClick={() => toggleItem(it.id)}
+                    disabled={isBusy}
+                    title={done ? "미완료로 변경" : "완료로 표시"}
+                    className="p-1"
+                  >
+                    {done ? (
+                      <CheckCircle className="h-5 w-5 text-teal-600" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-slate-400 hover:text-teal-600" />
+                    )}
+                  </button>
 
-            {/* ✏️ 제목 or 수정 input */}
-            {isEditing ? (
-              <input
-                value={editText}
-                onChange={(e) => setEditText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleEditSave();
-                  if (e.key === "Escape") setEditId(null);
-                }}
-                className="rounded-lg border border-slate-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-300"
-                autoFocus
-              />
-            ) : (
-              <span
-                className={`text-sm transition-colors ${
-                  done ? "line-through text-slate-400" : "text-slate-800"
-                }`}
-              >
-                {it.title}
-              </span>
-            )}
-          </div>
+                  {/* ✏️ 제목 or 수정 input */}
+                  {isEditing ? (
+                    <input
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleEditSave();
+                        if (e.key === "Escape") setEditId(null);
+                      }}
+                      className="rounded-lg border border-slate-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-300"
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      className={`text-sm transition-colors ${done ? "line-through text-slate-400" : "text-slate-800"
+                        }`}
+                    >
+                      {it.title}
+                    </span>
+                  )}
+                </div>
 
-          {/* ✏️ 수정 & 🗑️ 삭제 */}
-          <div className="flex items-center gap-1">
-            {isEditing ? (
-              <button
-                onClick={handleEditSave}
-                title="저장"
-                className="rounded-lg p-1 text-blue-600 hover:text-blue-800"
-              >
-                💾
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setEditId(it.id);
-                  setEditText(it.title);
-                }}
-                title="수정"
-                className="rounded-lg p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-              >
-                <Edit3 className="h-4 w-4" />
-              </button>
-            )}
+                {/* ✏️ 수정 & 🗑️ 삭제 */}
+                <div className="flex items-center gap-1">
+                  {isEditing ? (
+                    <button
+                      onClick={handleEditSave}
+                      title="저장"
+                      className="rounded-lg p-1 text-blue-600 hover:text-blue-800"
+                    >
+                      💾
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setEditId(it.id);
+                        setEditText(it.title);
+                      }}
+                      title="수정"
+                      className="rounded-lg p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </button>
+                  )}
 
-            <button
-              onClick={() => removeItem(it.id)}
-              title="삭제"
-              className="rounded-lg p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        </li>
-      );
-    })}
+                  <button
+                    onClick={() => removeItem(it.id)}
+                    title="삭제"
+                    className="rounded-lg p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
 
-  {items.length === 0 && (
-    <li className="py-6 text-center text-sm text-slate-500">
-      아직 등록된 버킷리스트가 없습니다. 위 입력창에서 추가해보세요.
-    </li>
-  )}
-</ul>
+          {items.length === 0 && (
+            <li className="py-6 text-center text-sm text-slate-500">
+              아직 등록된 버킷리스트가 없습니다. 위 입력창에서 추가해보세요.
+            </li>
+          )}
+        </ul>
       </SectionCard>
     </PageShell>
   );

@@ -1,5 +1,5 @@
 // src/pages/AnniversariesPage.tsx
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import PageShell from "../components/PageShell";
 import SectionCard from "../components/SectionCard";
 import { supabase } from "../lib/supabase";
@@ -443,15 +443,13 @@ export default function AnniversariesPage({ onHome }: Props) {
             return (
               <div
                 key={dayNum}
-                className={`h-24 rounded-lg border p-1 ${
-                  todayFlag ? "border-rose-400" : "border-slate-200"
-                } bg-white`}
+                className={`h-24 rounded-lg border p-1 ${todayFlag ? "border-rose-400" : "border-slate-200"
+                  } bg-white`}
               >
                 <div className="mb-1 flex items-center justify-between">
                   <span
-                    className={`text-xs ${
-                      todayFlag ? "text-rose-600 font-semibold" : "text-slate-600"
-                    }`}
+                    className={`text-xs ${todayFlag ? "text-rose-600 font-semibold" : "text-slate-600"
+                      }`}
                   >
                     {dayNum}
                   </span>

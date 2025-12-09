@@ -1,7 +1,7 @@
 // src/pages/PledgesPage.tsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import useAuth from "../hooks/useAuth";
-import { createSource, MindPledge } from "../utils/dataSource";
+import { createSource, type MindPledge } from "../utils/dataSource";
 import PageShell from "../components/PageShell";
 import SectionCard from "../components/SectionCard"; // ✅ 공통 카드로 통일
 import { Trash2 } from "lucide-react"; // ✅ 아이콘 버튼 톤 통일
@@ -18,7 +18,7 @@ const IconBtn = ({
   title: string;
   onClick?: () => void;
   disabled?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) => (
   <button
     type="button"

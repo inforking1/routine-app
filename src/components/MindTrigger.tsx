@@ -1,7 +1,7 @@
 // src/components/MindTrigger.tsx
 import { useEffect, useMemo, useState } from "react";
 import useAuth from "../hooks/useAuth";
-import { createSource, MindPledge } from "../utils/dataSource";
+import { createSource, type MindPledge } from "../utils/dataSource";
 
 type Props = {
   className?: string;
