@@ -1,5 +1,5 @@
 // src/pages/GoalsPage.tsx
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import PageShell from "../components/PageShell";
 import SectionCard from "../components/SectionCard";
 import { supabase } from "../lib/supabaseClient";
@@ -332,8 +332,8 @@ export default function GoalsPage({ onHome }: Props) {
                 if (editingId == null) setTerm(t);
               }}
               className={`rounded-full border px-3 py-1 text-sm ${activeTerm === t
-                  ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                  : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
                 }`}
             >
               {TERM_LABEL[t]}

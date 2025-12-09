@@ -3,7 +3,7 @@ node_modules/
 
 # production
 dist/
-
+dev-dist
 # misc
 .DS_Store
 Thumbs.db

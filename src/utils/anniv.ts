@@ -1,5 +1,5 @@
 export function getNextOccurrence(dateStr: string, base = new Date()) {
-  const [y, m, d] = dateStr.split("-").map(Number);
+  const [, m, d] = dateStr.split("-").map(Number);
   const today = new Date(base.getFullYear(), base.getMonth(), base.getDate());
   const candidate = new Date(today.getFullYear(), m - 1, d);
   return candidate >= today ? candidate : new Date(today.getFullYear() + 1, m - 1, d);
