@@ -45,7 +45,7 @@ export default function SectionCard({
   return (
     <section
       className={clsx(
-        "flex flex-col rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md",
+        "flex flex-col rounded-xl border p-4 md:p-5 shadow-sm transition-shadow hover:shadow-md",
         themeClass,
         className
       )}

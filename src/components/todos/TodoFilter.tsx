@@ -39,7 +39,7 @@ export default function TodoFilter({
     return (
         <div className="mb-4 space-y-3">
             {/* 1. 검색 + 정렬 */}
-            <div className="flex gap-2">
+            <div className="flex flex-col md:flex-row gap-2">
                 <div className="relative flex-1">
                     <input
                         value={search}
@@ -63,12 +63,12 @@ export default function TodoFilter({
             </div>
 
             {/* 2. 태그 필터 (가로 스크롤) */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide max-w-full">
                 <button
                     onClick={() => setFilterTag(null)}
                     className={`shrink-0 rounded-full border px-3 py-1 text-xs transition-colors ${filterTag === null
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-bold"
-                            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-bold"
+                        : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
                         }`}
                 >
                     전체
@@ -78,8 +78,8 @@ export default function TodoFilter({
                         key={tag}
                         onClick={() => setFilterTag(tag === filterTag ? null : tag)}
                         className={`shrink-0 rounded-full border px-3 py-1 text-xs transition-colors ${filterTag === tag
-                                ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-bold"
-                                : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-bold"
+                            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
                             }`}
                     >
                         #{tag}

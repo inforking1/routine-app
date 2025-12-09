@@ -376,8 +376,8 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
           allTags={allTags}
         />
 
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex gap-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-y-2">
+          <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
               <input
                 type="checkbox"

@@ -52,13 +52,15 @@ export default function PageShell({ title, children, onHome, showHeader = true }
       )}
 
       {/* 본문 */}
-      <div className="grid gap-4">
+      <div className="grid gap-4 min-w-0">
         {initLoading ? (
           <div className="mx-2 md:mx-0 rounded-2xl border bg-white/70 p-6 text-center text-slate-600">
             로딩 중…
           </div>
         ) : session ? (
-          children
+          <div className="min-w-0">
+            {children}
+          </div>
         ) : (
           <div className="mx-2 md:mx-0 rounded-2xl border bg-white/70 p-6 text-slate-700">
             <p className="text-sm">
