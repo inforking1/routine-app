@@ -1,5 +1,4 @@
-// src/pages/GoalsPage.tsx
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
 import SectionCard from "../components/SectionCard";
 import { supabase } from "../lib/supabaseClient";
@@ -46,7 +45,6 @@ export default function GoalsPage({ onHome }: Props) {
   /** ------- State ------- */
   const [items, setItems] = useState<Goal[]>([]);
   const [picks, setPicks] = useState<Record<Term, string | null>>({ short: null, mid: null, long: null });
-  const [activeTerm, setActiveTerm] = useState<Term>("short");
   const [loading, setLoading] = useState(true);
   const [savingPick, setSavingPick] = useState<Term | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -110,13 +108,10 @@ export default function GoalsPage({ onHome }: Props) {
     };
   }, [ready, user]); // user가 바뀌면 재로딩
 
-  /** ------- Derived ------- */
-  const filtered = useMemo(() => items.filter((g) => g.term === activeTerm), [items, activeTerm]);
-
   /** ------- Form utils ------- */
   const resetForm = () => {
     setText("");
-    setTerm(activeTerm);
+    setTerm("short");
     setProgress(0);
     setStartDate("");
     setEndDate("");
@@ -286,7 +281,7 @@ export default function GoalsPage({ onHome }: Props) {
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-6">
         {/* ✅ 카드 하단 공백 축소: className으로 h-auto p-3 md:p-4 만 덮어쓰기 */}
         <SectionCard title="홈 표시 현황" subtitle="단기·중기·장기 중 홈에 노출할 목표 1개씩" className="!h-auto !min-h-0 self-start p-3 md:p-4">
           <ul className="divide-y divide-slate-200 text-sm">
@@ -322,30 +317,17 @@ export default function GoalsPage({ onHome }: Props) {
           </ul>
         </SectionCard>
 
-        {/* 탭/필터 */}
-        <div className="flex flex-wrap gap-1.5">
-          {(["short", "mid", "long"] as Term[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => {
-                setActiveTerm(t);
-                if (editingId == null) setTerm(t);
-              }}
-              className={`rounded-full border px-3 py-1 text-sm ${activeTerm === t
-                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
-                }`}
-            >
-              {TERM_LABEL[t]}
-            </button>
-          ))}
-        </div>
+        {/* 입력/수정 폼 */}
+        <SectionCard
+          title={editingId ? "목표 수정" : "목표 추가"}
+          subtitle="목표 입력"
+          className="!h-auto !min-h-0 self-start p-3 md:p-4"
+        >
+          <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-12">
 
-        {/* 입력/수정 폼 — 공백 축소 */}
-        <SectionCard title={editingId ? "목표 수정" : "목표 추가"} subtitle="간단히 텍스트와 진행률만 입력, 기간은 선택" className="!h-auto !min-h-0 self-start p-3 md:p-4">
-          <form onSubmit={handleSubmit} className="grid gap-2 md:grid-cols-12">
-            <div className="md:col-span-6">
-              <label className="mb-1 block text-xs text-slate-500">목표 내용</label>
+            {/* 1. 목표 내용 (Top) */}
+            <div className="md:col-span-12">
+              <label className="mb-1 block text-xs font-semibold text-slate-600">목표 내용</label>
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -353,20 +335,30 @@ export default function GoalsPage({ onHome }: Props) {
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-400"
               />
             </div>
-            <div className="md:col-span-3">
-              <label className="mb-1 block text-xs text-slate-500">구분</label>
-              <select
-                value={term}
-                onChange={(e) => setTerm(e.target.value as Term)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-400"
-              >
-                <option value="short">단기</option>
-                <option value="mid">중기</option>
-                <option value="long">장기</option>
-              </select>
+
+            {/* 2. 구분 (Line 2) */}
+            <div className="md:col-span-6">
+              <label className="mb-1 block text-xs font-semibold text-slate-600">구분 (필수)</label>
+              <div className="flex rounded-lg bg-slate-100 p-1">
+                {(["short", "mid", "long"] as Term[]).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTerm(t)}
+                    className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-all ${term === t
+                      ? "bg-white text-emerald-600 shadow-sm ring-1 ring-emerald-100"
+                      : "text-slate-500 hover:text-slate-700"
+                      }`}
+                  >
+                    {TERM_LABEL[t]}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="md:col-span-3">
-              <label className="mb-1 block text-xs text-slate-500">진행률(%)</label>
+
+            {/* 3. 진행률 (Line 2) */}
+            <div className="md:col-span-6">
+              <label className="mb-1 block text-xs font-semibold text-slate-600">진행률 (%)</label>
               <input
                 type="number"
                 min={0}
@@ -379,8 +371,10 @@ export default function GoalsPage({ onHome }: Props) {
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-400"
               />
             </div>
+
+            {/* 4. 기간 (Line 3) */}
             <div className="md:col-span-12">
-              <label className="mb-1 block text-xs text-slate-500">기간(선택)</label>
+              <label className="mb-1 block text-xs font-semibold text-slate-600">기간 (선택)</label>
               <div className="flex items-center gap-2">
                 <input
                   type="date"
@@ -398,12 +392,14 @@ export default function GoalsPage({ onHome }: Props) {
               </div>
               <p className="mt-1 text-[11px] text-slate-400">기간은 비워도 됩니다.</p>
             </div>
-            <div className="md:col-span-12 flex gap-1.5">
-              <button type="submit" className="rounded-lg border border-emerald-500 bg-emerald-50 px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-100">
-                {editingId ? "수정 완료" : "추가"}
+
+            {/* Buttons */}
+            <div className="md:col-span-12 flex gap-2 pt-2">
+              <button type="submit" className="flex-1 rounded-lg border border-emerald-500 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 hover:bg-emerald-100 transition shadow-sm">
+                {editingId ? "수정 완료" : "목표 저장하기"}
               </button>
               {editingId != null && (
-                <button type="button" onClick={resetForm} className="rounded-lg border px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+                <button type="button" onClick={resetForm} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
                   취소
                 </button>
               )}
@@ -411,43 +407,64 @@ export default function GoalsPage({ onHome }: Props) {
           </form>
         </SectionCard>
 
-        {/* 목록 — 공백 축소 */}
-        <SectionCard title={`${TERM_LABEL[activeTerm]} 목표 목록`} subtitle="목표를 클릭하면 수정, 🏠표시로 홈 노출 설정" className="!h-auto !min-h-0 self-start p-3 md:p-4">
-          {filtered.length === 0 ? (
-            <p className="text-sm text-slate-500">아직 등록된 목표가 없습니다.</p>
-          ) : (
-            <ul className="divide-y divide-slate-200">
-              {filtered.map((g) => {
-                const isPicked = picks[g.term] === g.id;
-                return (
-                  <li key={g.id} className="flex items-center justify-between gap-2 py-1.5">
-                    <button className="min-w-0 flex-1 truncate text-left" onClick={() => handleEdit(g)} title="클릭하여 수정">
-                      <span className="truncate text-sm text-slate-800">{g.text}</span>{" "}
-                      <span className="text-xs text-slate-500">{metaLine(g)}</span>
-                      {isPicked && (
-                        <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] text-emerald-700">홈 표시중</span>
-                      )}
-                    </button>
-                    <div className="flex shrink-0 items-center gap-1">
-                      {isPicked ? (
-                        <button onClick={() => setHomePick(g.term, null)} disabled={savingPick === g.term} className="rounded-lg border border-emerald-500 bg-emerald-50 px-3 py-1 text-xs text-emerald-700 hover:bg-emerald-100 transition-colors" title="홈 표시 해제">
-                          🏠 해제
-                        </button>
-                      ) : (
-                        <button onClick={() => setHomePick(g.term, g.id)} disabled={savingPick === g.term} className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 transition-colors" title="이 목표를 홈에 표시">
-                          🏠 표시
-                        </button>
-                      )}
-                      <button onClick={() => handleDelete(g.id)} className="rounded-full border border-rose-300 bg-rose-50 px-2 py-0.5 text-xs text-rose-700 hover:bg-rose-100" title="삭제">
-                        🗑
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </SectionCard>
+        {/* 목록 (전체 펼치기) */}
+        <div className="space-y-6">
+          {(["short", "mid", "long"] as Term[]).map((t) => {
+            const list = items.filter((g) => g.term === t);
+            return (
+              <SectionCard
+                key={t}
+                title={`${TERM_LABEL[t]} 목표`}
+                subtitle={`${list.length}개의 목표가 있습니다.`}
+                className="!h-auto !min-h-0 p-3 md:p-4"
+              >
+                {list.length === 0 ? (
+                  <div className="py-4 text-center text-sm text-slate-400 bg-slate-50/50 rounded-lg border border-dashed border-slate-200">
+                    등록된 {TERM_LABEL[t]} 목표가 없습니다.
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-slate-100">
+                    {list.map((g) => {
+                      const isPicked = picks[g.term] === g.id;
+                      return (
+                        <li key={g.id} className="flex items-center justify-between gap-2 py-3 hover:bg-slate-50/50 transition-colors rounded-lg px-2 -mx-2">
+                          <button className="min-w-0 flex-1 truncate text-left group" onClick={() => handleEdit(g)} title="클릭하여 수정">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="truncate text-sm font-medium text-slate-800 group-hover:text-emerald-700 transition-colors">
+                                {g.text}
+                              </span>
+                              {isPicked && (
+                                <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">홈 PICK</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              {metaLine(g)} {g.start_date || g.end_date ? `(${fmt(g.start_date)}~${fmt(g.end_date)})` : ""}
+                            </div>
+                          </button>
+
+                          <div className="flex shrink-0 items-center gap-1">
+                            {isPicked ? (
+                              <button onClick={() => setHomePick(g.term, null)} disabled={savingPick === g.term} className="rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-600 font-medium hover:bg-emerald-100" title="홈 표시 해제">
+                                해제
+                              </button>
+                            ) : (
+                              <button onClick={() => setHomePick(g.term, g.id)} disabled={savingPick === g.term} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500 hover:bg-slate-50 hover:text-emerald-600" title="홈 표시">
+                                표시
+                              </button>
+                            )}
+                            <button onClick={() => handleDelete(g.id)} className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors" title="삭제">
+                              🗑
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </SectionCard>
+            );
+          })}
+        </div>
       </div>
     </PageShell>
   );

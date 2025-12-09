@@ -9,6 +9,7 @@ type Props = {
   subtitle?: string;
   actionLabel?: string;
   onAction?: () => void;
+  rightContent?: ReactNode;
   color?: SectionColor; // Theme color
   className?: string; // Extra spacing or width
   children: ReactNode;
@@ -19,6 +20,7 @@ export default function SectionCard({
   subtitle,
   actionLabel,
   onAction,
+  rightContent,
   color = "white",
   className,
   children,
@@ -43,13 +45,13 @@ export default function SectionCard({
   return (
     <section
       className={clsx(
-        "flex flex-col rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md h-full md:min-h-[260px]",
+        "flex flex-col rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md",
         themeClass,
         className
       )}
     >
-      <header className="mb-4 flex items-start justify-between">
-        <div className="flex flex-col gap-1">
+      <header className="mb-4 flex flex-wrap items-center justify-between gap-y-3">
+        <div className="flex flex-col gap-1 mr-4">
           {/* 타이틀 크기 확대 & 볼드 & 상단 여백(여기선 padding 개념으로 처리됨) */}
           <h3 className="mt-1 text-xl font-bold text-slate-800 tracking-tight">
             {title}
@@ -57,15 +59,18 @@ export default function SectionCard({
           {subtitle && <p className="text-xs text-slate-500 font-medium opacity-80">{subtitle}</p>}
         </div>
 
-        {/* 액션 버튼 */}
-        {actionLabel && onAction && (
-          <button
-            onClick={onAction}
-            className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-slate-500 hover:bg-black/5 hover:text-slate-900 transition-colors"
-          >
-            {actionLabel} ›
-          </button>
-        )}
+        {/* 오른쪽 컨텐츠 (버튼 등) 또는 액션 버튼 */}
+        <div className="flex items-center gap-2">
+          {rightContent}
+          {actionLabel && onAction && (
+            <button
+              onClick={onAction}
+              className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-slate-500 hover:bg-black/5 hover:text-slate-900 transition-colors"
+            >
+              {actionLabel} ›
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="flex-1 text-slate-700">

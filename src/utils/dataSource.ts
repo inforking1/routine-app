@@ -14,6 +14,13 @@ export type Todo = {
   order: number | null;
   pinned: boolean;
   created_at: string;
+  // New fields
+  priority: "high" | "normal"; // default 'normal'
+  tags: string[];             // default []
+  is_recurring: boolean;      // default false
+  recurring_rule: string | null;
+  notes: string;              // default ''
+  goal_id: UUID | null;
 };
 
 /** ---------- Anniversaries ---------- */
@@ -49,7 +56,7 @@ export function createSource(userId: UUID) {
     async listTodos(limit?: number): Promise<Todo[]> {
       let q = supabase
         .from("todos")
-        .select("id,user_id,text,done,due,order,pinned,created_at")
+        .select("id,user_id,text,done,due,order,pinned,created_at,priority,tags,is_recurring,recurring_rule,notes,goal_id")
         .eq("user_id", userId)
         .order("pinned", { ascending: false })
         .order("order", { ascending: true, nullsFirst: false })
@@ -70,6 +77,12 @@ export function createSource(userId: UUID) {
           due: input.due ?? null,
           order: input.order ?? null,
           pinned: !!input.pinned,
+          priority: input.priority || "normal",
+          tags: input.tags || [],
+          is_recurring: !!input.is_recurring,
+          recurring_rule: input.recurring_rule || null,
+          notes: input.notes || "",
+          goal_id: input.goal_id || null,
         })
         .select()
         .single();
@@ -288,7 +301,7 @@ export async function rpcCreateMission(input: {
   ends_at?: string | null;
   reward_points?: number;
   coupon_id?: string | null;
-  status?: 'active' | 'inactive' | 'draft';  
+  status?: 'active' | 'inactive' | 'draft';
 }): Promise<string> {
   const { data, error } = await supabase.rpc("create_mission", {
     p_title: input.title,

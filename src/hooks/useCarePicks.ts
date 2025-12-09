@@ -2,186 +2,126 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import type { Contact } from "../types/contacts";
 
-const KST = 'Asia/Seoul';
-
-function todayKST() {
+// 날짜 포맷 (YYYY-MM-DD) - Safe KST
+function getTodayStr() {
   const now = new Date();
-  const kst = new Intl.DateTimeFormat('en-CA', { timeZone: KST, year: 'numeric', month: '2-digit', day: '2-digit' })
-    .format(now); // YYYY-MM-DD
-  return kst;
+  const kstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return kstDate.toISOString().slice(0, 10);
 }
 
-// D-day 계산: YYYY-MM-DD(월/일만 비교)
-function daysUntil(dateStr: string | null) {
-  if (!dateStr) return null;
-  const [, m, d] = dateStr.split("-").map(Number);
-  const today = new Date();
-  const ky = today.getFullYear();
-  let next = new Date(ky, (m - 1), d);
-  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  if (next < t) next = new Date(ky + 1, (m - 1), d);
-  const diff = Math.round((next.getTime() - t.getTime()) / (1000 * 60 * 60 * 24));
-  return diff; // 0이면 오늘
+// 날짜 비교 (MM-DD)
+function isEventToday(dateStr: string | null) {
+  if (!dateStr || typeof dateStr !== 'string') return false;
+  if (dateStr.length < 10) return false;
+  const today = getTodayStr(); // YYYY-MM-DD
+  return dateStr.slice(5) === today.slice(5);
 }
 
-// 스코어링
-function scoreContact(c: Contact) {
-  let score = 0;
-  // 중요도
-  const imp = c.importance ?? 1;
-  score += imp * 10;
-
-  // 마지막 연락으로부터 경과일 (최대 60점)
-  if (c.last_contacted_at) {
-    const days = Math.min(
-      60,
-      Math.max(0, Math.floor((Date.now() - new Date(c.last_contacted_at).getTime()) / (1000 * 60 * 60 * 24)))
-    );
-    score += days;
-  } else {
-    // 연락 기록 없으면 기본 가산
-    score += 30;
+// 하루 고정 랜덤 (Deterministic Random per Date + ID)
+function dayHash(id: string, date: string) {
+  let hash = 0;
+  const str = id + date;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
   }
-
-  // 다가오는 이벤트 가산
-  const bd = daysUntil(c.birthday);
-  const an = daysUntil(c.anniversary);
-  const minEvent = [bd, an].filter(v => v !== null).reduce<number | null>((a, v) => {
-    if (a === null) return v as number;
-    return Math.min(a, v as number);
-  }, null);
-
-  if (minEvent !== null && minEvent <= 30) {
-    score += (30 - minEvent) + 20; // 가까울수록 높은 점수
-  }
-
-  return score;
+  return hash;
 }
 
-// 안정적 “하루 랜덤성”: 날짜+id로 해시 정렬 (간단 버전)
-function dayHashComparator(date: string) {
-  return (a: Contact, b: Contact) => {
-    const ha = (date + a.id).split("").reduce((acc, ch) => (acc * 33 + ch.charCodeAt(0)) >>> 0, 5381);
-    const hb = (date + b.id).split("").reduce((acc, ch) => (acc * 33 + ch.charCodeAt(0)) >>> 0, 5381);
-    return ha - hb;
-  };
-}
-
-export function useCarePicks() {
-  const [loading, setLoading] = useState(true);
+export function useCarePicks(initialContacts?: Contact[]) {
   const [picks, setPicks] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(!initialContacts);
   const [error, setError] = useState<string | null>(null);
-  const pickDate = todayKST();
+  const [deferredIds, setDeferredIds] = useState<Set<string>>(new Set());
+  const dateStr = getTodayStr();
+
+  // 내부 데이터 로딩 (initialContacts가 없을 때)
+  const [internalContacts, setInternalContacts] = useState<Contact[]>([]);
 
   useEffect(() => {
-    let mounted = true;
+    if (initialContacts) {
+      setInternalContacts(initialContacts);
+      setLoading(false);
+      return;
+    }
 
-    (async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("로그인이 필요합니다.");
-
-        // 1) 이미 생성된 picks가 있으면 그대로 사용
-        const { data: dp } = await supabase
-          .from("daily_picks")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("pick_date", pickDate)
-          .maybeSingle();
-
-        if (dp?.picks?.length) {
-          const { data: contacts } = await supabase
-            .from("contacts")
-            .select("*")
-            .in("id", dp.picks);
-          if (mounted) {
-            setPicks((contacts ?? []) as Contact[]);
-            setLoading(false);
-          }
-          return;
-        }
-
-        // 2) 오늘 처음이면 전체에서 후보 계산
-        const { data: all } = await supabase
-          .from("contacts")
-          .select("*")
-          .eq("user_id", user.id);
-
-        const contacts = (all ?? []) as Contact[];
-
-        // 소량일 때 가드
-        if (contacts.length <= 3) {
-          // 전부 저장
-          await supabase.from("daily_picks").insert({
-            user_id: user.id,
-            pick_date: pickDate,
-            picks: contacts.map(c => c.id),
-          });
-          if (mounted) {
-            setPicks(contacts);
-            setLoading(false);
-          }
-          return;
-        }
-
-        // 스코어링 + 정렬
-        const withScore = contacts
-          .map(c => ({ c, score: scoreContact(c) }))
-          .sort((a, b) => b.score - a.score);
-
-        // 상위 30% 풀 만들고, 날짜 해시로 안정적 셔플
-        const topN = Math.max(3, Math.floor(withScore.length * 0.3));
-        const pool = withScore.slice(0, topN).map(x => x.c).sort(dayHashComparator(pickDate));
-
-        // 태그 다양성(있으면) 살짝 고려
-        const chosen: Contact[] = [];
-        const seenTags = new Set<string>();
-
-        for (const cand of pool) {
-          const tags = (cand.tags ?? []);
-          const hasNewTag = tags.some(t => !seenTags.has(t));
-          if (chosen.length < 2 && hasNewTag) {
-            chosen.push(cand);
-            tags.forEach(t => seenTags.add(t));
-          }
-          if (chosen.length >= 3) break;
-        }
-        // 부족하면 순서대로 채움
-        for (const cand of pool) {
-          if (chosen.length >= 3) break;
-          if (!chosen.find(x => x.id === cand.id)) chosen.push(cand);
-        }
-
-        const pickIds = chosen.slice(0, 3).map(c => c.id);
-
-        await supabase.from("daily_picks").insert({
-          user_id: user.id,
-          pick_date: pickDate,
-          picks: pickIds,
-        });
-
-        const { data: finalContacts } = await supabase
-          .from("contacts")
-          .select("*")
-          .in("id", pickIds);
-
-        if (mounted) {
-          setPicks((finalContacts ?? []) as Contact[]);
-          setLoading(false);
-        }
-      } catch (e: any) {
-        if (mounted) {
-          setError(e.message ?? "안부 추천을 불러오지 못했습니다.");
-          setLoading(false);
-        }
+    const fetchContacts = async () => {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
       }
-    })();
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("user_id", user.id);
 
-    return () => { mounted = false; };
-  }, [pickDate]);
+      if (error) setError(error.message);
+      else setInternalContacts(data as Contact[]);
 
-  return { picks, loading, error, pickDate };
+      setLoading(false);
+    };
+
+    fetchContacts();
+  }, [initialContacts]);
+
+
+  // 추천 로직 (internalContacts 기준)
+  useEffect(() => {
+    if (internalContacts.length === 0) {
+      setPicks([]);
+      return;
+    }
+
+    const candidates = internalContacts.filter(c => !deferredIds.has(c.id));
+
+    // Group A: 오늘 생일/기념일
+    const groupEvent = candidates.filter(c => isEventToday(c.birthday) || isEventToday(c.anniversary));
+
+    // Group B: 나머지
+    const others = candidates.filter(c => !groupEvent.includes(c));
+
+    others.sort((a, b) => {
+      const impA = a.importance ?? 1;
+      const impB = b.importance ?? 1;
+      if (impA !== impB) return impB - impA;
+      const lastA = a.last_contacted_at ? new Date(a.last_contacted_at).getTime() : 0;
+      const lastB = b.last_contacted_at ? new Date(b.last_contacted_at).getTime() : 0;
+      return lastA - lastB;
+    });
+
+    let result: Contact[] = [];
+    result.push(...groupEvent);
+
+    if (result.length < 3) {
+      const need = 3 - result.length;
+      const poolSize = Math.max(need * 3, 10);
+      const pool = others.slice(0, poolSize);
+      pool.sort((a, b) => dayHash(a.id, dateStr) - dayHash(b.id, dateStr));
+      result.push(...pool.slice(0, need));
+    }
+
+    setPicks(result.slice(0, 3));
+
+  }, [internalContacts, deferredIds, dateStr]);
+
+  const deferContact = (id: string) => {
+    setDeferredIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
+
+  return {
+    picks,
+    loading,
+    error,
+    pickDate: dateStr,
+    deferContact,
+    todayContactCount: internalContacts.filter(c =>
+      c.last_contacted_at && c.last_contacted_at.startsWith(dateStr)
+    ).length
+  };
 }
