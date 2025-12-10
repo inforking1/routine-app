@@ -6,6 +6,7 @@ import React, {
   forwardRef,
 } from "react";
 import PageShell from "../components/PageShell";
+import SectionCard from "../components/SectionCard";
 import {
   isOperator,
   fetchMissions,
@@ -26,19 +27,6 @@ import { supabase } from "../lib/supabaseClient";
 type Props = { onHome?: () => void };
 
 /* ---------- UI Primitives (공통) ---------- */
-
-const Card: React.FC<{ className?: string; children: React.ReactNode }> = ({
-  className = "",
-  children,
-}) => (
-  <section
-    className={
-      "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm " + className
-    }
-  >
-    {children}
-  </section>
-);
 
 const Button: React.FC<
   React.ButtonHTMLAttributes<HTMLButtonElement> & { busy?: boolean }
@@ -174,36 +162,28 @@ export default function MissionPage({ onHome }: Props) {
 
   const displayList = isEmpty ? SAMPLE_MISSIONS : missions;
 
+  const headerRight = (
+    <button
+      onClick={refresh}
+      className="text-[13px] text-indigo-600 bg-white/70 border border-indigo-100 rounded-full px-3 py-[3px] shadow-sm hover:bg-white hover:border-indigo-200 hover:text-indigo-700 active:scale-[0.97] transition-all"
+    >
+      새로고침
+    </button>
+  );
+
   return (
-    <PageShell title="미션 & 리워드" onHome={onHome} showHeader={false}>
+    <PageShell title="미션 & 리워드" onHome={onHome}>
       {loading ? (
         <div className="p-4 text-sm text-slate-600">로딩 중…</div>
       ) : (
-        <div className="space-y-5">
-          {/* Page Header */}
-          <section className="rounded-[22px] bg-[#F3F5FE] shadow-sm px-5 py-4 md:px-6 md:py-5 flex items-center justify-between">
-            <h1 className="text-[18px] font-semibold text-slate-900 tracking-tight">미션 & 리워드</h1>
-            {onHome && (
-              <button
-                onClick={onHome}
-                className="text-[13px] text-indigo-600 bg-white/70 border border-indigo-100 rounded-full px-3 py-[3px] shadow-sm hover:bg-white hover:border-indigo-200 hover:text-indigo-700 active:scale-[0.97] transition-all"
-              >
-                ← 홈으로
-              </button>
-            )}
-          </section>
+        <div className="space-y-6">
           {/* 유저: 미션 목록 */}
-          <section className="rounded-[22px] bg-[#F3F5FE] shadow-sm px-5 py-6">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight mb-2">진행 가능한 미션</h2>
-              <button
-                onClick={refresh}
-                className="text-[13px] text-indigo-600 bg-white/70 border border-indigo-100 rounded-full px-3 py-[3px] shadow-sm hover:bg-white hover:border-indigo-200 hover:text-indigo-700 active:scale-[0.97] transition-all"
-              >
-                새로고침
-              </button>
-            </div>
-
+          <SectionCard
+            title="진행 가능한 미션"
+            subtitle=""
+            rightContent={headerRight}
+            className="bg-[#F3F5FE] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150"
+          >
             {/* 🚀 Onboarding Hint */}
             {isEmpty && (
               <div className="mb-4 text-[14px] leading-relaxed text-indigo-700 bg-indigo-50 border border-indigo-100 p-4 rounded-[18px] flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
@@ -319,11 +299,14 @@ export default function MissionPage({ onHome }: Props) {
                 })
               )}
             </div>
-          </section>
+          </SectionCard>
 
           {/* 유저: 내 쿠폰 */}
-          <section className="rounded-[22px] bg-white shadow-sm px-5 py-6 border border-slate-200">
-            <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight mb-2">내 쿠폰</h2>
+          <SectionCard
+            title="내 쿠폰"
+            subtitle="발급받은 쿠폰 내역입니다."
+            className="bg-[#F5F7FF] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150"
+          >
             {/* If needed, we could add sample coupons here too, but prioritized Missions as per task flow. */}
             {myCoupons.length === 0 ? (
               <p className="text-[14px] text-slate-800">발급된 쿠폰이 없습니다.</p>
@@ -357,7 +340,7 @@ export default function MissionPage({ onHome }: Props) {
                 ))}
               </div>
             )}
-          </section>
+          </SectionCard>
 
           {/* 운영자 전용 패널 */}
           {operator && (
@@ -399,11 +382,9 @@ function OperatorPanels({
   const [busyCoupon, setBusyCoupon] = useState(false);
 
   return (
-    <Card>
-      <h2 className="mb-3 text-xl font-semibold">운영자 패널</h2>
-
+    <SectionCard title="운영자 패널" subtitle="관리자 전용 기능입니다." className="bg-red-50 border-red-200">
       {/* 쿠폰 생성 */}
-      <Card className="mb-4">
+      <div className="mb-6 p-4 bg-white rounded-xl border border-slate-200">
         <div className="mb-2 font-medium">쿠폰 생성</div>
         <div className="grid gap-2 md:grid-cols-5">
           <Input placeholder="이름" ref={couponNameRef} />
@@ -478,10 +459,10 @@ function OperatorPanels({
             쿠폰 생성
           </Button>
         </div>
-      </Card>
+      </div>
 
       {/* 미션 생성 */}
-      <Card className="mb-4">
+      <div className="mb-6 p-4 bg-white rounded-xl border border-slate-200">
         <div className="mb-2 font-medium">미션 생성</div>
         <div className="grid gap-2 md:grid-cols-6">
           <Input placeholder="제목" ref={missionTitleRef} className="md:col-span-2" />
@@ -571,10 +552,10 @@ function OperatorPanels({
             미션 생성
           </Button>
         </div>
-      </Card>
+      </div>
 
       {/* 미션 목록(활성/비활성) */}
-      <Card>
+      <div className="p-4 bg-white rounded-xl border border-slate-200">
         <div className="mb-2 font-medium">미션 목록</div>
         <div className="grid gap-2">
           {missions.length === 0 ? (
@@ -614,7 +595,7 @@ function OperatorPanels({
             ))
           )}
         </div>
-      </Card>
-    </Card>
+      </div>
+    </SectionCard>
   );
 }

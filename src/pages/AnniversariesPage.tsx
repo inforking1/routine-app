@@ -356,7 +356,7 @@ export default function AnniversariesPage({ onHome }: Props) {
 
   return (
     <PageShell title="기념일" onHome={onHome}>
-      <SectionCard title="기념일(Anniversaries)" subtitle="중요한 날 잊지 않기" className="bg-[#F3F5FE] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150">
+      <SectionCard title="기념일(Anniversaries)" subtitle="중요한 날 잊지 않기" className="mb-6 bg-[#F3F5FE] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150">
 
         {/* 🚀 Onboarding Hint */}
         {

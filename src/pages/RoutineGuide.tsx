@@ -120,6 +120,38 @@ export default function RoutineGuidePage() {
         </div>
       </div>
 
+      {/* 성공 루틴 지도 카드 (Static Guide) - Moved from Home */}
+      <div className="mt-5 rounded-[22px] bg-[#F3F5FE] shadow-sm px-5 py-6 space-y-3">
+        <h3 className="text-[18px] font-semibold text-slate-900 mb-1">이 앱은 ‘성공 루틴 지도’입니다</h3>
+        <p className="text-[13px] text-slate-600 mb-3">하루를 성공으로 이끄는 모든 루틴을 한 곳에 모아둔 앱입니다.</p>
+
+        <div className="space-y-3">
+          {/* 1. 아침 */}
+          <div className="rounded-[16px] bg-white/80 px-4 py-3 border border-indigo-50">
+            <h4 className="text-[14px] font-semibold text-slate-900">아침 – 마음 루틴</h4>
+            <p className="text-[13px] text-slate-700 mt-1">오늘의 다짐, 아침 루틴으로 하루의 방향과 컨디션을 먼저 세웁니다.</p>
+          </div>
+
+          {/* 2. 낮 */}
+          <div className="rounded-[16px] bg-white/80 px-4 py-3 border border-indigo-50">
+            <h4 className="text-[14px] font-semibold text-slate-900">낮 – 행동 루틴</h4>
+            <p className="text-[13px] text-slate-700 mt-1">목표, 오늘의 할 일, 뉴스/정보 루틴으로 ‘해야 할 것’을 실행으로 연결합니다.</p>
+          </div>
+
+          {/* 3. 저녁 */}
+          <div className="rounded-[16px] bg-white/80 px-4 py-3 border border-indigo-50">
+            <h4 className="text-[14px] font-semibold text-slate-900">저녁 – 회고 루틴</h4>
+            <p className="text-[13px] text-slate-700 mt-1">명상, 감사일기, (앞으로 추가될) 저녁 루틴으로 하루를 정리하고 회고합니다.</p>
+          </div>
+
+          {/* 4. 항상 */}
+          <div className="rounded-[16px] bg-white/80 px-4 py-3 border border-indigo-50">
+            <h4 className="text-[14px] font-semibold text-slate-900">항상 – 관계·동기 루틴</h4>
+            <p className="text-[13px] text-slate-700 mt-1">안부, 기념일, 리워드/보상 루틴으로 사람과 동기부여를 관리합니다.</p>
+          </div>
+        </div>
+      </div>
+
       {/* CTA */}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <button

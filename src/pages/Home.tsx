@@ -1,5 +1,6 @@
 // src/pages/Home.tsx
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { createSource } from "../utils/dataSource";
 import type { Todo, Anniversary, Gratitude } from "../utils/dataSource"; // Fixed type names
 import { supabase } from "../lib/supabaseClient";
@@ -10,7 +11,7 @@ import SectionCard from "../components/SectionCard";
 import MeditationOfTheDay from "../components/MeditationOfTheDay";
 import NewsFeed from "../components/NewsFeed";
 import CarePing from "../components/CarePing";
-// import RoutineCardMinimal from "../components/routine/RoutineCardMinimal";
+import RoutineCardMinimal from "../components/routine/RoutineCardMinimal";
 import { getSolarDateFromLunar } from "../utils/lunar"; // Import for nextOccurrenceDate
 
 /* ===== Helpers (Locally defined to fix import errors) ===== */
@@ -294,6 +295,108 @@ function GratitudePreview({ userId }: { userId: string }) {
 
 export default function Home({ onNavigate }: { onNavigate: (v: any) => void }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Morning Routine State
+  const [morningRoutines, setMorningRoutines] = useState<{ id: string; title: string; isDoneToday: boolean }[]>([]);
+
+
+  useEffect(() => {
+    if (!user) return;
+
+    let mounted = true;
+    (async () => {
+      try {
+        // 1. Fetch Routines
+        let { data: routines } = await supabase
+          .from('routines')
+          .select('id, title')
+          .eq('user_id', user.id)
+          .eq('category', 'morning')
+          .order('order_index');
+
+        // 2. Auto-Seed if empty
+        if (!routines || routines.length === 0) {
+          const seeds = [
+            { user_id: user.id, title: '물 한 잔 마시기', category: 'morning', order_index: 0 },
+            { user_id: user.id, title: '스트레칭 5분', category: 'morning', order_index: 1 },
+            { user_id: user.id, title: '오늘의 다짐 읽기', category: 'morning', order_index: 2 },
+          ];
+          const { data: inserted } = await supabase.from('routines').insert(seeds).select('id, title');
+          routines = inserted || [];
+        }
+
+        // 3. Fetch Today's Logs
+        const today = new Date().toISOString().split('T')[0];
+        const { data: logs } = await supabase
+          .from('routine_logs')
+          .select('routine_id, is_done')
+          .eq('user_id', user.id)
+          .eq('date', today);
+
+        if (!mounted) return;
+
+        // 4. Merge
+        const merged = (routines || []).map((r) => {
+          const log = logs?.find((l) => l.routine_id === r.id);
+          return {
+            id: r.id,
+            title: r.title,
+            isDoneToday: log ? log.is_done : false,
+          };
+        });
+        setMorningRoutines(merged);
+      } catch (e) {
+        console.error("Failed to load morning routines:", e);
+      }
+    })();
+
+    return () => { mounted = false; };
+  }, [user]);
+
+  const handleToggleMorningRoutine = async (id: string, nextValue: boolean) => {
+    if (!user) return;
+
+    // 1. Optimistic Update
+    setMorningRoutines((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, isDoneToday: nextValue } : r))
+    );
+
+    // 2. DB Update
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      // Check for existing log
+      const { data: existing } = await supabase
+        .from('routine_logs')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('routine_id', id)
+        .eq('date', today)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('routine_logs')
+          .update({ is_done: nextValue })
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('routine_logs')
+          .insert({
+            user_id: user.id,
+            routine_id: id,
+            date: today,
+            is_done: nextValue,
+          });
+        if (error) throw error;
+      }
+    } catch (e) {
+      console.error("Failed to toggle routine:", e);
+      // Rollback on error could be implemented here
+    }
+  };
 
   if (!user) return null;
 
@@ -304,16 +407,20 @@ export default function Home({ onNavigate }: { onNavigate: (v: any) => void }) {
         {/* 히어로 영역: 오늘의 다짐 [2] Wrapper Updated in MindTrigger.tsx */}
         <MindTrigger onManage={() => onNavigate("pledges")} />
 
-        {/* 루틴 미니멀 카드 (예시) - Fixed items prop to string[] */}
-        {/* <RoutineCardMinimal
+        {/* 루틴 미니멀 카드 (DB 연동) */}
+        <RoutineCardMinimal
           title="아침 루틴"
           icon="☀️"
-          items={[
-            "물 한 잔 마시기",
-            "스트레칭 5분",
-            "오늘의 다짐 읽기"
-          ]}
-        /> */}
+          items={morningRoutines.map(r => ({
+            id: r.id,
+            label: r.title,
+            isDone: r.isDoneToday
+          }))}
+          onToggle={handleToggleMorningRoutine}
+          onManage={() => navigate('/routines')}
+        />
+
+
 
         {/* 그리드 레이아웃: 섹션 간 구분감 강화 (높이 통일을 위해 items-stretch) */}
         {/* Updated Spacing: space-y-0 but grid gap remains */}

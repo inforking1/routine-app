@@ -22,6 +22,7 @@ import SettingsPage from "./pages/SettingsPage";
 import PledgesPage from "./pages/PledgesPage";
 import RoleManagementPage from "./pages/RoleManagementPage";
 import AdminMissionsPage from "./pages/AdminMissionsPage";
+import RoutineManagePage from "./pages/RoutineManagePage";
 
 type View =
   | "home" | "goals" | "todos" | "anniversaries" | "news" | "meditation"
@@ -233,6 +234,7 @@ function AppContent() {
             <Route path="/community" element={<CommunityPage onHome={() => navigate("/")} />} />
             <Route path="/settings" element={<SettingsPage onHome={() => navigate("/")} />} />
             <Route path="/pledges" element={<PledgesPage onBack={() => navigate("/")} />} />
+            <Route path="/routines" element={<RoutineManagePage onHome={() => navigate("/")} />} />
             {/* 로그인 상태에서 /auth는 홈으로 돌려보냄 */}
             <Route path="/auth" element={<Navigate to="/" replace />} />
             <Route path="*" element={<div className="p-6 text-slate-600">페이지를 찾을 수 없습니다.</div>} />

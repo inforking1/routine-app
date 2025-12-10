@@ -1,5 +1,6 @@
 // src/pages/SettingsPage.tsx
 import { useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import AuthCard from "../components/AuthCard";
 import SectionCard from "../components/SectionCard";
@@ -42,6 +43,7 @@ function flattenCommentsFromCommunityPosts(posts: any[]): any[] {
 }
 
 export default function SettingsPage({ onHome }: Props) {
+  const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   // --- UI 상태 ---
@@ -215,6 +217,16 @@ export default function SettingsPage({ onHome }: Props) {
           </button>
         </div>
       )}
+
+      {/* Routine Management Link */}
+      <SectionCard title="루틴 관리" subtitle="매일의 아침/저녁 루틴을 설정합니다" className="!h-auto !min-h-0 self-start p-3 md:p-4">
+        <button
+          onClick={() => navigate('/routines')}
+          className="h-10 w-full rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-sm font-medium hover:bg-indigo-100 transition-colors"
+        >
+          루틴 관리 페이지로 이동
+        </button>
+      </SectionCard>
 
       {/* 섹션별 초기화 */}
       <SectionCard title="섹션별 초기화" subtitle="삭제할 데이터만 선택하세요" className="!h-auto !min-h-0 self-start p-3 md:p-4">

@@ -23,6 +23,7 @@ type Props = {
   color?: SectionColor;
   className?: string; // Additional custom classes
   children: ReactNode;
+  rightContent?: ReactNode;
 };
 
 export default function SectionCard({
@@ -33,6 +34,7 @@ export default function SectionCard({
   color = "slate",
   className,
   children,
+  rightContent,
 }: Props) {
   // 색상 테마 매핑 (Tailwind Classes) - Reset to simple container as requested.
   // We rely on 'className' prop passed from parent for specific background colors.
@@ -73,14 +75,17 @@ export default function SectionCard({
         </div>
 
         {/* 오른쪽 컨텐츠 (버튼 등) 또는 액션 버튼 - [3] Final Polish Style */}
-        {actionLabel && onAction && (
-          <button
-            onClick={onAction}
-            className="shrink-0 rounded-full border border-indigo-100 bg-white/70 px-3 py-[3px] text-[13px] font-medium text-indigo-600 shadow-sm hover:bg-white hover:text-indigo-700 transition-colors"
-          >
-            {actionLabel}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {rightContent}
+          {actionLabel && onAction && (
+            <button
+              onClick={onAction}
+              className="shrink-0 rounded-full border border-indigo-100 bg-white/70 px-3 py-[3px] text-[13px] font-medium text-indigo-600 shadow-sm hover:bg-white hover:text-indigo-700 transition-colors"
+            >
+              {actionLabel}
+            </button>
+          )}
+        </div>
       </header>
 
       {/* 본문 컨텐츠 */}
