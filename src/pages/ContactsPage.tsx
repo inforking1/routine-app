@@ -61,6 +61,12 @@ const EventBadge = ({ date, type }: { date?: string | null, type: '생일' | '�
   return null;
 };
 
+
+const SAMPLE_CONTACTS: Contact[] = [
+  { id: 'sample-1', user_id: 'sample', name: '엄마 (예시)', tags: ['가족'], importance: 3, phone: '', created_at: '', last_contacted_at: null, birthday: null, birthday_type: 'solar', anniversary: null, anniversary_type: 'solar' },
+  { id: 'sample-2', user_id: 'sample', name: '멘토 선생님 (예시)', tags: ['감사 인사'], importance: 2, phone: '', created_at: '', last_contacted_at: null, birthday: null, birthday_type: 'solar', anniversary: null, anniversary_type: 'solar' },
+];
+
 export default function ContactsPage({ onHome }: { onHome?: () => void }) {
   const [mode, setMode] = useState<Mode>("list");
   const [items, setItems] = useState<Contact[]>([]);
@@ -73,8 +79,12 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
   const [tagFilter, setTagFilter] = useState("");
   const [impFilter, setImpFilter] = useState<number | "">("");
 
+  const isEmpty = items.length === 0;
+
   // Care Picks Hook
-  const { picks, deferContact, todayContactCount } = useCarePicks(items);
+  // 🚀 Use SAMPLE_CONTACTS if empty
+  const sourceItems = isEmpty ? SAMPLE_CONTACTS : items;
+  const { picks, deferContact, todayContactCount } = useCarePicks(sourceItems);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -105,6 +115,7 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
   }, []);
 
   const handleContacted = async (id: string) => {
+    if (id.startsWith('sample-')) return;
     const nowStr = new Date().toISOString(); // timestamptz format
 
     // Optimistic Update
@@ -128,12 +139,12 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
 
   const uniqueTags = useMemo(() => {
     const s = new Set<string>();
-    items.forEach((c) => (c.tags ?? []).forEach((t) => t && s.add(t)));
+    sourceItems.forEach((c) => (c.tags ?? []).forEach((t) => t && s.add(t)));
     return Array.from(s).sort();
-  }, [items]);
+  }, [sourceItems]);
 
   const filtered = useMemo(() => {
-    let arr = [...items];
+    let arr = [...sourceItems];
     const keyword = q.trim().toLowerCase();
     if (keyword) {
       arr = arr.filter((c) =>
@@ -150,7 +161,7 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
       arr = arr.filter((c) => (c.importance ?? 1) === impFilter);
     }
     return arr;
-  }, [items, q, tagFilter, impFilter]);
+  }, [sourceItems, q, tagFilter, impFilter]);
 
   // ... (Existing Handlers: Create, Update, Remove)
   const handleCreate = async (
@@ -224,6 +235,7 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
   };
 
   const handleRemove = async (id: string) => {
+    if (id.startsWith('sample-')) return;
     if (!confirm("해당 연락처를 삭제할까요?")) return;
     setBusy(true);
     try {
@@ -238,6 +250,7 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
   };
 
   const startEdit = (c: Contact) => {
+    if (c.user_id === 'sample') return;
     setEditing(c);
     setMode("edit");
   };
@@ -250,7 +263,9 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-indigo-900">오늘의 안부 👋</h2>
-              <p className="text-xs text-indigo-600">하루 3명에게 안부를 전해보세요.</p>
+              <p className="text-xs text-indigo-600">
+                {isEmpty ? "자주 안부를 전하고 싶은 분들을 등록해두면, 오늘 연락드리면 좋은 분이 자동으로 추천됩니다." : "하루 3명에게 안부를 전해보세요."}
+              </p>
             </div>
             <div className="text-right">
               <span className="text-xs font-semibold text-indigo-500 block">오늘 완료</span>
@@ -265,6 +280,7 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
               </div>
             ) : (
               picks.map(p => {
+                const isSample = p.user_id === 'sample';
                 // Check if contacted today (KST) safely
                 let isDone = false;
                 try {
@@ -281,7 +297,7 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
                 }
 
                 return (
-                  <div key={p.id} className={`rounded-xl border p-3 bg-white shadow-sm transition-all ${isDone ? "opacity-60 border-indigo-100 bg-indigo-50/50" : "border-indigo-100 hover:border-indigo-300 hover:shadow-md"}`}>
+                  <div key={p.id} className={`rounded-xl border p-3 bg-white shadow-sm transition-all ${isDone ? "opacity-60 border-indigo-100 bg-indigo-50/50" : "border-indigo-100 hover:border-indigo-300 hover:shadow-md"} ${isSample ? 'opacity-80' : ''}`}>
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <div className="font-bold text-slate-800 flex items-center gap-1">
@@ -295,24 +311,28 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
                       </div>
                     </div>
                     <div className="flex gap-1.5 mt-2">
-                      {isDone ? (
-                        <button disabled className="flex-1 rounded-lg bg-indigo-100 py-1.5 text-xs font-bold text-indigo-400 cursor-default">
-                          완료됨 ✅
-                        </button>
-                      ) : (
+                      {!isSample && (
                         <>
-                          <button
-                            onClick={() => handleContacted(p.id)}
-                            className="flex-1 rounded-lg bg-indigo-500 py-1.5 text-xs font-bold text-white hover:bg-indigo-600 transition-colors"
-                          >
-                            연락 완료
-                          </button>
-                          <button
-                            onClick={() => deferContact(p.id)}
-                            className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-200"
-                          >
-                            미루기
-                          </button>
+                          {isDone ? (
+                            <button disabled className="flex-1 rounded-lg bg-indigo-100 py-1.5 text-xs font-bold text-indigo-400 cursor-default">
+                              완료됨 ✅
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleContacted(p.id)}
+                                className="flex-1 rounded-lg bg-indigo-500 py-1.5 text-xs font-bold text-white hover:bg-indigo-600 transition-colors"
+                              >
+                                연락 완료
+                              </button>
+                              <button
+                                onClick={() => deferContact(p.id)}
+                                className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-200"
+                              >
+                                미루기
+                              </button>
+                            </>
+                          )}
                         </>
                       )}
                     </div>
@@ -395,56 +415,63 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
             <>
               {/* 📱 모바일 카드 */}
               <ul className="divide-y divide-slate-100 md:hidden">
-                {filtered.map((c) => (
-                  <li key={c.id} className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1 flex-wrap">
-                          <span className="truncate font-medium text-slate-900">{c.name}</span>
-                          <span className="shrink-0 text-xs text-slate-500">
-                            {importanceIcon(c.importance)}
-                          </span>
-                          {c.birthday && (
-                            <div className="flex items-center">
-                              <EventBadge date={c.birthday} type="생일" />
-                              {c.birthday_type === 'lunar' && <span className="text-[10px] text-slate-500 bg-slate-100 px-1 rounded ml-1">음</span>}
-                            </div>
+                {filtered.map((c) => {
+                  const isSample = c.user_id === 'sample';
+                  return (
+                    <li key={c.id} className={`p-4 ${isSample ? 'bg-slate-50/50 opacity-80' : ''}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className={`truncate font-medium ${isSample ? 'text-slate-600' : 'text-slate-900'}`}>{c.name}</span>
+                            <span className="shrink-0 text-xs text-slate-500">
+                              {importanceIcon(c.importance)}
+                            </span>
+                            {c.birthday && (
+                              <div className="flex items-center">
+                                <EventBadge date={c.birthday} type="생일" />
+                                {c.birthday_type === 'lunar' && <span className="text-[10px] text-slate-500 bg-slate-100 px-1 rounded ml-1">음</span>}
+                              </div>
+                            )}
+                            {c.anniversary && (
+                              <div className="flex items-center">
+                                <EventBadge date={c.anniversary} type="기념일" />
+                                {c.anniversary_type === 'lunar' && <span className="text-[10px] text-slate-500 bg-slate-100 px-1 rounded ml-1">음</span>}
+                              </div>
+                            )}
+                          </div>
+                          <div
+                            className="mt-1 break-words text-sm text-slate-700 cursor-pointer hover:text-indigo-600"
+                            onClick={() => !isSample && handleCall(c.phone)}
+                          >
+                            {c.phone ? `📞 ${c.phone}` : "-"}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500">
+                            {c.last_contacted_at ? `${getDaysDiff(c.last_contacted_at)}일 전 연락` : "연락 기록 없음"}
+                          </div>
+                          <div className="mt-1 break-words text-xs text-slate-400">
+                            {(c.tags ?? []).join(", ")}
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 flex-col gap-2">
+                          {!isSample && (
+                            <>
+                              <button
+                                onClick={() => handleContacted(c.id)}
+                                className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs text-indigo-600 hover:bg-indigo-100"
+                              >
+                                연락함
+                              </button>
+                              <div className="flex gap-1">
+                                <button onClick={() => startEdit(c)} className="rounded border px-2 py-1 text-xs">수정</button>
+                                <button onClick={() => handleRemove(c.id)} className="rounded border border-rose-100 px-2 py-1 text-xs text-rose-600">삭제</button>
+                              </div>
+                            </>
                           )}
-                          {c.anniversary && (
-                            <div className="flex items-center">
-                              <EventBadge date={c.anniversary} type="기념일" />
-                              {c.anniversary_type === 'lunar' && <span className="text-[10px] text-slate-500 bg-slate-100 px-1 rounded ml-1">음</span>}
-                            </div>
-                          )}
-                        </div>
-                        <div
-                          className="mt-1 break-words text-sm text-slate-700 cursor-pointer hover:text-indigo-600"
-                          onClick={() => handleCall(c.phone)}
-                        >
-                          {c.phone ? `📞 ${c.phone}` : "-"}
-                        </div>
-                        <div className="mt-1 text-xs text-slate-500">
-                          {c.last_contacted_at ? `${getDaysDiff(c.last_contacted_at)}일 전 연락` : "연락 기록 없음"}
-                        </div>
-                        <div className="mt-1 break-words text-xs text-slate-400">
-                          {(c.tags ?? []).join(", ")}
                         </div>
                       </div>
-                      <div className="flex shrink-0 flex-col gap-2">
-                        <button
-                          onClick={() => handleContacted(c.id)}
-                          className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs text-indigo-600 hover:bg-indigo-100"
-                        >
-                          연락함
-                        </button>
-                        <div className="flex gap-1">
-                          <button onClick={() => startEdit(c)} className="rounded border px-2 py-1 text-xs">수정</button>
-                          <button onClick={() => handleRemove(c.id)} className="rounded border border-rose-100 px-2 py-1 text-xs text-rose-600">삭제</button>
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
 
               {/* 🖥️ 데스크톱 표 */}
@@ -461,71 +488,76 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filtered.map((c) => (
-                      <tr key={c.id} className="hover:bg-slate-50 [&>td]:px-4 [&>td]:py-3">
-                        <td>
-                          <div className="font-medium">{c.name}</div>
-                          <div className="text-xs text-slate-400">{(c.tags ?? []).join(", ")}</div>
-                        </td>
-                        <td
-                          className="text-slate-600 cursor-pointer hover:text-indigo-600"
-                          onClick={() => handleCall(c.phone)}
-                          title="클릭하여 전화걸기"
-                        >
-                          {c.phone ?? "-"}
-                        </td>
-                        <td className="text-slate-500">{importanceIcon(c.importance)}</td>
-                        <td className="text-slate-600">
-                          {c.last_contacted_at ? (
-                            <span title={c.last_contacted_at.slice(0, 10)}>
-                              {getDaysDiff(c.last_contacted_at)}일 전
-                            </span>
-                          ) : <span className="text-slate-300">-</span>}
-                        </td>
-                        <td>
-                          <div className="flex flex-col gap-1 items-start">
-                            {c.birthday && (
-                              <span className="text-xs flex items-center">
-                                🎂 {fmtDate(c.birthday)}
-                                {c.birthday_type === 'lunar' && <span className="ml-1 text-[10px] text-slate-500 bg-slate-100 px-1 rounded">음력</span>}
-                                <EventBadge date={c.birthday} type="생일" />
+                    {filtered.map((c) => {
+                      const isSample = c.user_id === 'sample';
+                      return (
+                        <tr key={c.id} className={`hover:bg-slate-50 [&>td]:px-4 [&>td]:py-3 ${isSample ? 'bg-slate-50/50 opacity-80' : ''}`}>
+                          <td>
+                            <div className={`font-medium ${isSample ? 'text-slate-600' : ''}`}>{c.name}</div>
+                            <div className="text-xs text-slate-400">{(c.tags ?? []).join(", ")}</div>
+                          </td>
+                          <td
+                            className={`text-slate-600 ${!isSample ? 'cursor-pointer hover:text-indigo-600' : ''}`}
+                            onClick={() => !isSample && handleCall(c.phone)}
+                            title="클릭하여 전화걸기"
+                          >
+                            {c.phone ?? "-"}
+                          </td>
+                          <td className="text-slate-500">{importanceIcon(c.importance)}</td>
+                          <td className="text-slate-600">
+                            {c.last_contacted_at ? (
+                              <span title={c.last_contacted_at.slice(0, 10)}>
+                                {getDaysDiff(c.last_contacted_at)}일 전
                               </span>
+                            ) : <span className="text-slate-300">-</span>}
+                          </td>
+                          <td>
+                            <div className="flex flex-col gap-1 items-start">
+                              {c.birthday && (
+                                <span className="text-xs flex items-center">
+                                  🎂 {fmtDate(c.birthday)}
+                                  {c.birthday_type === 'lunar' && <span className="ml-1 text-[10px] text-slate-500 bg-slate-100 px-1 rounded">음력</span>}
+                                  <EventBadge date={c.birthday} type="생일" />
+                                </span>
+                              )}
+                              {c.anniversary && (
+                                <span className="text-xs flex items-center">
+                                  🎉 {fmtDate(c.anniversary)}
+                                  {c.anniversary_type === 'lunar' && <span className="ml-1 text-[10px] text-slate-500 bg-slate-100 px-1 rounded">음력</span>}
+                                  <EventBadge date={c.anniversary} type="기념일" />
+                                </span>
+                              )}
+                              {!c.birthday && !c.anniversary && <span className="text-slate-300 text-xs">-</span>}
+                            </div>
+                          </td>
+                          <td className="text-right">
+                            {!isSample && (
+                              <div className="inline-flex items-center gap-2">
+                                <button
+                                  onClick={() => handleContacted(c.id)}
+                                  className="rounded bg-indigo-50 px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-100"
+                                  title="오늘 연락함 처리"
+                                >
+                                  연락함
+                                </button>
+                                <button
+                                  onClick={() => startEdit(c)}
+                                  className="rounded border border-slate-200 px-2 py-1 text-xs hover:bg-slate-50"
+                                >
+                                  수정
+                                </button>
+                                <button
+                                  onClick={() => handleRemove(c.id)}
+                                  className="rounded border border-rose-100 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50"
+                                >
+                                  삭제
+                                </button>
+                              </div>
                             )}
-                            {c.anniversary && (
-                              <span className="text-xs flex items-center">
-                                🎉 {fmtDate(c.anniversary)}
-                                {c.anniversary_type === 'lunar' && <span className="ml-1 text-[10px] text-slate-500 bg-slate-100 px-1 rounded">음력</span>}
-                                <EventBadge date={c.anniversary} type="기념일" />
-                              </span>
-                            )}
-                            {!c.birthday && !c.anniversary && <span className="text-slate-300 text-xs">-</span>}
-                          </div>
-                        </td>
-                        <td className="text-right">
-                          <div className="inline-flex items-center gap-2">
-                            <button
-                              onClick={() => handleContacted(c.id)}
-                              className="rounded bg-indigo-50 px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-100"
-                              title="오늘 연락함 처리"
-                            >
-                              연락함
-                            </button>
-                            <button
-                              onClick={() => startEdit(c)}
-                              className="rounded border border-slate-200 px-2 py-1 text-xs hover:bg-slate-50"
-                            >
-                              수정
-                            </button>
-                            <button
-                              onClick={() => handleRemove(c.id)}
-                              className="rounded border border-rose-100 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50"
-                            >
-                              삭제
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

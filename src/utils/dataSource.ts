@@ -145,6 +145,20 @@ export function createSource(userId: UUID) {
       return data as Gratitude;
     },
 
+    // 🔽🔽🔽 [추가] 감사일기 수정 메서드 🔽🔽🔽
+    async updateGratitude(id: UUID, text: string): Promise<Gratitude> {
+      const { data, error } = await supabase
+        .from("gratitudes")
+        .update({ text })
+        .eq("id", id)
+        .eq("user_id", userId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as Gratitude;
+    },
+    // 🔼🔼🔼 [추가 끝] 🔼🔼🔼
+
     // 🔽🔽🔽 [추가] 감사일기 삭제 메서드 (UI에서 호출됨) 🔽🔽🔽
     async removeGratitude(id: UUID): Promise<void> {
       const { error } = await supabase

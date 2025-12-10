@@ -88,12 +88,20 @@ const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = ({
 
 /* ---------- Page ---------- */
 
+
+const SAMPLE_MISSIONS: Mission[] = [
+  { id: 'sample-1', title: '매일 물 1L 마시기 (예시)', description: '건강을 위해 물을 충분히 마셔보세요.', reward_points: 100, is_active: true, created_at: '', starts_at: null, ends_at: null, coupon_id: null },
+  { id: 'sample-2', title: '책 10페이지 읽기 (예시)', description: '하루 10분, 마음의 양식을 쌓아요.', reward_points: 50, is_active: true, created_at: '', starts_at: null, ends_at: null, coupon_id: null },
+];
+
 export default function MissionPage({ onHome }: Props) {
   const [operator, setOperator] = useState<boolean>(false);
   const [missions, setMissions] = useState<Mission[]>([]);
   const [myMissions, setMyMissions] = useState<UserMission[]>([]);
   const [myCoupons, setMyCoupons] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const isEmpty = missions.filter(m => m.is_active).length === 0;
 
   // StrictMode 이중 실행 방지
   const didInit = useRef(false);
@@ -164,6 +172,8 @@ export default function MissionPage({ onHome }: Props) {
     }
   };
 
+  const displayList = isEmpty ? SAMPLE_MISSIONS : missions;
+
   return (
     <PageShell title="미션 & 리워드" onHome={onHome}>
       {loading ? (
@@ -177,13 +187,22 @@ export default function MissionPage({ onHome }: Props) {
               <Button onClick={refresh}>새로고침</Button>
             </div>
 
+            {/* 🚀 Onboarding Hint */}
+            {isEmpty && (
+              <div className="mb-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 p-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                <span>🎯</span>
+                <p>미션에 참여하고 달성하면 <strong>포인트와 쿠폰</strong>을 받을 수 있어요.</p>
+              </div>
+            )}
+
             <div className="grid gap-3">
-              {missions.length === 0 ? (
+              {displayList.length === 0 ? (
                 <p className="text-sm text-slate-500">
                   현재 활성 미션이 없습니다.
                 </p>
               ) : (
-                missions.map((m) => {
+                displayList.map((m) => {
+                  const isSample = m.id.startsWith('sample-');
                   const my = myStatusByMissionId.get(m.id);
                   const status = my?.status ?? "todo";
                   const canEnroll = !my;
@@ -192,11 +211,11 @@ export default function MissionPage({ onHome }: Props) {
                   return (
                     <div
                       key={m.id}
-                      className="rounded-xl border border-slate-200 p-4"
+                      className={`rounded-xl border border-slate-200 p-4 ${isSample ? 'bg-slate-50/50 opacity-80' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="truncate text-lg font-semibold">
+                          <div className={`truncate text-lg font-semibold ${isSample ? 'text-slate-600' : ''}`}>
                             {m.title}
                           </div>
                           {m.description && (
@@ -227,7 +246,9 @@ export default function MissionPage({ onHome }: Props) {
 
                           {canEnroll && (
                             <Button
+                              disabled={isSample}
                               onClick={async () => {
+                                if (isSample) return;
                                 try {
                                   await rpcEnrollMission(m.id);
                                   await refresh();
@@ -235,8 +256,7 @@ export default function MissionPage({ onHome }: Props) {
                                 } catch (e: any) {
                                   console.error(e);
                                   alert(
-                                    `참여하기 실패: ${
-                                      e?.message ?? "알 수 없는 오류"
+                                    `참여하기 실패: ${e?.message ?? "알 수 없는 오류"
                                     }`
                                   );
                                 }
@@ -248,7 +268,9 @@ export default function MissionPage({ onHome }: Props) {
 
                           {canComplete && (
                             <Button
+                              disabled={isSample}
                               onClick={async () => {
+                                if (isSample) return;
                                 try {
                                   await rpcCompleteMission(m.id);
                                   await refresh();
@@ -256,8 +278,7 @@ export default function MissionPage({ onHome }: Props) {
                                 } catch (e: any) {
                                   console.error(e);
                                   alert(
-                                    `완료 처리 실패: ${
-                                      e?.message ?? "알 수 없는 오류"
+                                    `완료 처리 실패: ${e?.message ?? "알 수 없는 오류"
                                     }`
                                   );
                                 }
@@ -284,6 +305,7 @@ export default function MissionPage({ onHome }: Props) {
           {/* 유저: 내 쿠폰 */}
           <Card>
             <h2 className="mb-3 text-xl font-semibold">내 쿠폰</h2>
+            {/* If needed, we could add sample coupons here too, but prioritized Missions as per task flow. */}
             {myCoupons.length === 0 ? (
               <p className="text-sm text-slate-500">발급된 쿠폰이 없습니다.</p>
             ) : (
@@ -303,9 +325,9 @@ export default function MissionPage({ onHome }: Props) {
                           : `할인 ${uc.coupon?.discount_value}원`}
                         {uc.coupon?.expires_at
                           ? ` · 유효기간 ${format(
-                              new Date(uc.coupon.expires_at),
-                              "yyyy-MM-dd"
-                            )}`
+                            new Date(uc.coupon.expires_at),
+                            "yyyy-MM-dd"
+                          )}`
                           : ""}
                       </div>
                     </div>

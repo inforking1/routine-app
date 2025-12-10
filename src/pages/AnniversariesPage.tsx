@@ -102,6 +102,11 @@ function nextOccurrenceDate(
   }
 }
 
+const SAMPLE_ANNIVERSARIES: Anniversary[] = [
+  { id: 'sample-1', user_id: 'sample', title: '엄마 생일 (예시)', date: '1975-05-08', type: 'solar', is_recurring: true, created_at: new Date().toISOString() },
+  { id: 'sample-2', user_id: 'sample', title: '부모님 결혼기념일 (예시)', date: '1990-10-10', type: 'solar', is_recurring: true, created_at: new Date().toISOString() },
+];
+
 export default function AnniversariesPage({ onHome }: Props) {
   const [items, setItems] = useState<Anniversary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,6 +123,8 @@ export default function AnniversariesPage({ onHome }: Props) {
   const [editDate, setEditDate] = useState("");
   const [editType, setEditType] = useState<'solar' | 'lunar'>('solar');
   const [editIsRecurring, setEditIsRecurring] = useState(true);
+
+  const isEmpty = items.length === 0;
 
   /** ===== fetch ===== */
   useEffect(() => {
@@ -205,6 +212,7 @@ export default function AnniversariesPage({ onHome }: Props) {
 
   /** ===== edit ===== */
   const startEdit = (a: Anniversary) => {
+    if (a.user_id === 'sample') return;
     setEditId(a.id);
     setEditTitle(a.title);
     setEditDate(a.date);
@@ -239,6 +247,7 @@ export default function AnniversariesPage({ onHome }: Props) {
   };
 
   const removeItem = async (id: string) => {
+    if (id.startsWith('sample-')) return;
     const backup = items;
     setItems((prev) => prev.filter((it) => it.id !== id));
     try {
@@ -254,7 +263,10 @@ export default function AnniversariesPage({ onHome }: Props) {
   /** ===== derived: upcoming 3 ===== */
   const today = new Date();
   const upcoming3 = useMemo(() => {
-    const withNext = items.map((it) => ({
+    // 🚀 Use SAMPLE_ANNIVERSARIES if empty
+    const source = isEmpty ? SAMPLE_ANNIVERSARIES : items;
+
+    const withNext = source.map((it) => ({
       it,
       next: nextOccurrenceDate(it.date, it.type ?? 'solar', it.is_recurring ?? true, today)
     }));
@@ -264,7 +276,7 @@ export default function AnniversariesPage({ onHome }: Props) {
     const past = withNext.filter(x => x.next < today).sort((a, b) => b.next.getTime() - a.next.getTime());
 
     return [...future, ...past].slice(0, 3).map(x => ({ ...x.it, next: x.next }));
-  }, [items]);
+  }, [items, isEmpty]);
 
   /** ===== calendar ===== */
   const [viewDate, setViewDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -283,75 +295,47 @@ export default function AnniversariesPage({ onHome }: Props) {
     const m = viewDate.getMonth();
 
     items.forEach((it) => {
-      // Calendar Display logic needs to match what is visible in "This Month".
+      // Helper to safely add unique item to a specific day
+      const addToDay = (day: number) => {
+        const list = map.get(day);
+        if (list && !list.some(existing => existing.id === it.id)) {
+          list.push(it);
+        }
+      };
+
       // 1. Solar Default:
       if (!it.type || it.type === 'solar') {
         const d = parseYMD(normalizeDateStr(it.date));
         const isRecur = it.is_recurring ?? true;
-        // Month/Day match?
+
         if (isRecur) {
-          if (d.getMonth() === m) map.get(d.getDate())?.push(it);
+          if (d.getMonth() === m) addToDay(d.getDate());
         } else {
-          if (d.getFullYear() === y && d.getMonth() === m) map.get(d.getDate())?.push(it);
+          if (d.getFullYear() === y && d.getMonth() === m) addToDay(d.getDate());
         }
       } else {
         // 2. Lunar
-        // We need to check if the lunar date falls into the "View Month (Solar)".
-        // Since converting every day of the month to lunar is one way (Calendar lib might support it),
-        // or converting the lunar anniversary to solar year (y) and seeing if it falls in m.
-
         const isRecur = it.is_recurring ?? true;
         if (isRecur) {
-          // "Recurring Lunar":
-          // Check if "Lunar date in Solar Year y" falls in Solar Month m?
-          // Or maybe "Lunar date in Solar Year y-1"? (Lunar New Year can be Jan/Feb)
-
-          // Better approach for efficiency:
-          // Convert the lunar date to solar for the current View Year (y).
-          const solarStr = getSolarDateFromLunar(normalizeDateStr(it.date), y);
-          const solarDate = parseYMD(solarStr);
-          if (solarDate.getMonth() === m && solarDate.getFullYear() === y) {
-            map.get(solarDate.getDate())?.push(it);
-          }
-
-          // Also check y+1? Usually anniversary shifts forward ~11 days.
-          // If the view is Dec, maybe next year's early lunar date falls here? Not really.
-          // If the view is Jan, maybe last year's late lunar?
-          // Let's stick to "Lunar date occurring in Solar Year y".
-          // NOTE: A lunar date might occur twice in a solar year (rare but possible with leap months? handled by lib?) or if it's early/late.
-          // Actually, `getSolarDateFromLunar(..., y)` returns "Lunar ... in Solar Year y"?
-          // No, the library function `calendar.setLunarDate(y, m, d)` means "Lunar Year y".
-          // My wrapper `getSolarDateFromLunar` assumes the param `targetYear` IS the Lunar Year.
-          // Correct Logic: "Recurring Lunar Anniversary" means we celebrate it on "Lunar Year 2024", "Lunar Year 2025", etc.
-          // We need to find which Lunar Year(s) correspond to the Solar View Month.
-
-          // Approximating: Solar 2025 roughly overlaps with Lunar 2024 (~11/20) - 2025 (~11/10).
-          // It's safer to check:
-          // 1. Lunar Date for Lunar Year (y-1)
-          // 2. Lunar Date for Lunar Year (y)
-          // 3. Lunar Date for Lunar Year (y+1)
-          // And see if any of them fall into the current View Month (Solar).
-
+          // Check previous, current, next year for coverage
           [y - 1, y, y + 1].forEach(lunarYear => {
             const sStr = getSolarDateFromLunar(normalizeDateStr(it.date), lunarYear);
             const sDate = parseYMD(sStr);
             if (sDate.getFullYear() === y && sDate.getMonth() === m) {
-              map.get(sDate.getDate())?.push(it);
+              addToDay(sDate.getDate());
             }
           });
         } else {
           // One-time Lunar
-          const d = parseYMD(normalizeDateStr(it.date)); // d uses the stored "date" as "Lunar Year"!
-          // Wait, storing "2023-10-23" as Lunar means Lunar Year 2023.
-          // So we just convert that specific lunar date to Solar.
-          const sStr = getSolarDateFromLunar(normalizeDateStr(it.date), d.getFullYear());
+          const sStr = getSolarDateFromLunar(normalizeDateStr(it.date), parseYMD(normalizeDateStr(it.date)).getFullYear());
           const sDate = parseYMD(sStr);
           if (sDate.getFullYear() === y && sDate.getMonth() === m) {
-            map.get(sDate.getDate())?.push(it);
+            addToDay(sDate.getDate());
           }
         }
       }
     });
+
     return map;
   }, [items, viewDate, totalDays]);
 
@@ -373,13 +357,22 @@ export default function AnniversariesPage({ onHome }: Props) {
   return (
     <PageShell title="기념일" onHome={onHome}>
       <SectionCard title="기념일(Anniversaries)" subtitle="중요한 날 잊지 않기">
+
+        {/* 🚀 Onboarding Hint */}
+        {isEmpty && (
+          <div className="mb-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 p-3 rounded-lg flex items-center gap-2">
+            <span>💡</span>
+            <p>소중한 사람의 <strong>생일·기념일</strong>을 등록해두면 달력에서 한눈에 볼 수 있어요.</p>
+          </div>
+        )}
+
         {/* 입력 */}
         <form className="mb-4 flex flex-col gap-2 p-3 bg-slate-50 rounded-xl" onSubmit={handleSubmit}>
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="제목 (예: 부모님 결혼기념일)"
+              placeholder={isEmpty ? "예) 부모님 결혼기념일" : "제목 (예: 부모님 결혼기념일)"}
               className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-300"
             />
             <input
@@ -434,6 +427,7 @@ export default function AnniversariesPage({ onHome }: Props) {
           {upcoming3.map((item) => {
             const a = item as Anniversary & { next: Date };
             const isEditing = editId === a.id;
+            const isSample = a.user_id === 'sample';
 
             // D-Day Calc
             const today0 = new Date();
@@ -464,7 +458,7 @@ export default function AnniversariesPage({ onHome }: Props) {
             // Usually we show the stored date (Anniversary Date) and the calculated D-day.
 
             return (
-              <li key={a.id} className="py-3">
+              <li key={a.id} className={`py-3 ${isSample ? 'opacity-75' : ''}`}>
                 {isEditing ? (
                   <div className="flex flex-col gap-2 bg-slate-50 p-2 rounded-lg">
                     {/* (Edit Form omitted for brevity - same as before but using state) */}
@@ -535,7 +529,7 @@ export default function AnniversariesPage({ onHome }: Props) {
                 ) : (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className={`truncate font-medium text-slate-700 ${diffDays < 0 ? "text-slate-400" : ""}`}>{a.title}</span>
+                      <span className={`truncate font-medium ${isSample ? 'text-slate-600' : 'text-slate-700'} ${diffDays < 0 ? "text-slate-400" : ""}`}>{a.title} {isSample && "(예시)"}</span>
                       <div className="flex items-center gap-1 flex-wrap">
                         <span className="flex items-center gap-1 text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
                           {normalizeDateStr(a.date)}
@@ -557,20 +551,24 @@ export default function AnniversariesPage({ onHome }: Props) {
                       </div>
                     </div>
                     <div className="flex shrink-0 gap-1 ml-2">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(a)}
-                        className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
-                      >
-                        수정
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(a.id)}
-                        className="rounded bg-rose-50 px-2 py-1 text-xs text-rose-600 hover:bg-rose-100"
-                      >
-                        삭제
-                      </button>
+                      {!isSample && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => startEdit(a)}
+                            className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
+                          >
+                            수정
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(a.id)}
+                            className="rounded bg-rose-50 px-2 py-1 text-xs text-rose-600 hover:bg-rose-100"
+                          >
+                            삭제
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}

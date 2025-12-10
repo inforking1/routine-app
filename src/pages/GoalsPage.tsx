@@ -41,6 +41,12 @@ const metaLine = (g?: Goal | null) => {
 
 type Props = { onHome: () => void };
 
+const SAMPLE_GOALS: Goal[] = [
+  { id: 'sample-1', user_id: 'sample', text: '하루 10분 걷기 (예시)', term: 'short', progress: 30, created_at: new Date().toISOString() },
+  { id: 'sample-2', user_id: 'sample', text: '하루 10분 독서하기 (예시)', term: 'short', progress: 0, created_at: new Date().toISOString() },
+  { id: 'sample-3', user_id: 'sample', text: '물 1잔 더 마시기 (예시)', term: 'short', progress: 50, created_at: new Date().toISOString() },
+];
+
 export default function GoalsPage({ onHome }: Props) {
   /** ------- State ------- */
   const [items, setItems] = useState<Goal[]>([]);
@@ -57,14 +63,52 @@ export default function GoalsPage({ onHome }: Props) {
   const [endDate, setEndDate] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // 🔄 Local Routine State
+  const [routineIds, setRoutineIds] = useState<string[]>([]);
+  const [dailyDoneIds, setDailyDoneIds] = useState<string[]>([]);
+
+  const isEmpty = items.length === 0;
+
   /** ------- Load ------- */
   const { user, ready } = useAuth();
 
-  /** ------- Load ------- */
+  /** ------- Effects ------- */
+  useEffect(() => {
+    // 1. Load routine config
+    const savedConfig = localStorage.getItem("my_routine_config");
+    if (savedConfig) {
+      try {
+        const parsed = JSON.parse(savedConfig);
+        if (parsed.ids) setRoutineIds(parsed.ids);
+      } catch (e) { console.error("Failed to parse routine config", e); }
+    }
+
+    // 2. Load daily status & Reset if needed
+    const savedDaily = localStorage.getItem("my_routine_daily");
+    const todayStr = new Date().toDateString(); // "Tue Dec 10 2024" format is stable enough per day in local time
+
+    if (savedDaily) {
+      try {
+        const parsed = JSON.parse(savedDaily);
+        if (parsed.date === todayStr) {
+          setDailyDoneIds(parsed.doneIds || []);
+        } else {
+          // Date changed, reset
+          setDailyDoneIds([]);
+          localStorage.setItem("my_routine_daily", JSON.stringify({ date: todayStr, doneIds: [] }));
+        }
+      } catch (e) {
+        setDailyDoneIds([]);
+      }
+    } else {
+      // First time
+      localStorage.setItem("my_routine_daily", JSON.stringify({ date: todayStr, doneIds: [] }));
+    }
+  }, []);
+
   useEffect(() => {
     if (!ready) return; // 아직 로드 중이면 대기
     if (!user) {
-      // 로그인 안된 상태면 로딩 끄고 에러 처리하거나 리다이렉트 (여기선 목록 빈배열)
       setLoading(false);
       return;
     }
@@ -76,7 +120,7 @@ export default function GoalsPage({ onHome }: Props) {
       try {
         const uid = user.id;
 
-        // goals: 항상 본인 것만
+        // goals
         const { data: goalsData, error: goalsErr } = await sb
           .from("goals")
           .select("id,user_id,text,progress,term,created_at,start_date,end_date")
@@ -84,7 +128,7 @@ export default function GoalsPage({ onHome }: Props) {
           .order("created_at", { ascending: true });
         if (goalsErr) throw goalsErr;
 
-        // goal_picks: 본인 것만
+        // goal_picks
         const { data: picksData, error: picksErr } = await sb
           .from("goal_picks")
           .select("term,goal_id")
@@ -106,7 +150,7 @@ export default function GoalsPage({ onHome }: Props) {
     return () => {
       alive = false;
     };
-  }, [ready, user]); // user가 바뀌면 재로딩
+  }, [ready, user]);
 
   /** ------- Form utils ------- */
   const resetForm = () => {
@@ -158,13 +202,12 @@ export default function GoalsPage({ onHome }: Props) {
             end_date: endDate || null,
           } as any)
           .eq("id", editingId)
-          .eq("user_id", uid); // 안전 필터
+          .eq("user_id", uid);
         if (error) {
           setItems(backup);
           throw error;
         }
       } else {
-        // optimistic temp
         const temp: Goal = {
           id: crypto.randomUUID(),
           user_id: uid,
@@ -204,6 +247,7 @@ export default function GoalsPage({ onHome }: Props) {
 
   /** ------- Edit/Delete ------- */
   const handleEdit = (g: Goal) => {
+    if (g.user_id === 'sample') return;
     setEditingId(g.id);
     setText(g.text);
     setTerm(g.term);
@@ -213,12 +257,18 @@ export default function GoalsPage({ onHome }: Props) {
   };
 
   const handleDelete = async (id: string) => {
+    if (id.startsWith('sample-')) return;
     const backup = items;
     setItems((prev) => prev.filter((g) => g.id !== id));
+
+    // Also remove from routine config if present
+    if (routineIds.includes(id)) {
+      toggleRoutine(id); // effectively remove
+    }
+
     try {
       if (user) {
         const uid = user.id;
-        // 홈 표시 중이었다면 goal_picks도 정리
         const removed = backup.find((g) => g.id === id);
         if (removed && picks[removed.term] === id) {
           await sb.from("goal_picks").delete().match({ user_id: uid, term: removed.term } as any);
@@ -238,6 +288,7 @@ export default function GoalsPage({ onHome }: Props) {
 
   /** ------- Pick for Home ------- */
   const setHomePick = async (term: Term, goalId: string | null) => {
+    if (goalId?.startsWith('sample-')) return;
     try {
       if (!user) throw new Error("로그인이 필요합니다.");
       const uid = user.id;
@@ -270,14 +321,101 @@ export default function GoalsPage({ onHome }: Props) {
     }
   };
 
+  /** ------- Routine Logic ------- */
+  const toggleRoutine = (id: string) => {
+    if (id.startsWith('sample-')) return;
+    let next: string[];
+    if (routineIds.includes(id)) {
+      next = routineIds.filter(rid => rid !== id);
+    } else {
+      next = [...routineIds, id];
+    }
+    setRoutineIds(next);
+    localStorage.setItem("my_routine_config", JSON.stringify({ ids: next }));
+  };
+
+  const toggleDailyCheck = (id: string) => {
+    let next: string[];
+    if (dailyDoneIds.includes(id)) {
+      next = dailyDoneIds.filter(did => did !== id);
+    } else {
+      next = [...dailyDoneIds, id];
+    }
+    setDailyDoneIds(next);
+    const todayStr = new Date().toDateString();
+    localStorage.setItem("my_routine_daily", JSON.stringify({ date: todayStr, doneIds: next }));
+  };
+
   /** ------- Render ------- */
   if (loading) return <div className="p-4 text-sm text-slate-500">불러오는 중…</div>;
+
+  const activeRoutines = items.filter(g => routineIds.includes(g.id));
 
   return (
     <PageShell title="나의 목표" onHome={onHome}>
       {error && (
         <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
           오류: {error}
+        </div>
+      )}
+
+      {/* 🚀 Onboarding Guide Card */}
+      {isEmpty && (
+        <div className="mb-6 rounded-2xl bg-indigo-50 p-5 shadow-sm border border-indigo-100 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-start gap-4">
+            <span className="text-3xl">🌱</span>
+            <div>
+              <h3 className="text-lg font-bold text-indigo-900 mb-1">처음 사용이시군요 😊</h3>
+              <p className="text-sm text-indigo-700 leading-relaxed">
+                가장 이루고 싶은 목표부터 가볍게 시작해보세요.<br />
+                아래 예시처럼 <strong>단기 목표</strong>부터 등록해보는 건 어떨까요?
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 💡 Big Goal Breakdown Hint */}
+      {isEmpty && (
+        <div className="mb-6 rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-700 leading-relaxed shadow-sm">
+          <p className="font-semibold text-slate-900 mb-1">💡 목표 설정 팁</p>
+          <p>
+            큰 목표가 있다면, 작게 쪼개서 매일 실천할 수 있도록 만들어보세요.<br />
+            <span className="text-slate-500 text-xs">예) 월 1천만 원 벌기 → 하루 1가지 수익 행동하기</span>
+          </p>
+        </div>
+      )}
+
+      {/* ☀️ Today's Routine Card */}
+      {!isEmpty && activeRoutines.length > 0 && (
+        <div className="mb-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 p-4 shadow-sm border border-indigo-100">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xl">☀️</span>
+            <h3 className="font-bold text-indigo-900">오늘의 목표 루틴</h3>
+          </div>
+          <div className="space-y-2">
+            {activeRoutines.map(g => {
+              const isDone = dailyDoneIds.includes(g.id);
+              return (
+                <button
+                  key={g.id}
+                  onClick={() => toggleDailyCheck(g.id)}
+                  className={`flex w-full items-center gap-3 rounded-xl border p-3 transition-all ${isDone
+                      ? "bg-indigo-100 border-indigo-200"
+                      : "bg-white border-white hover:border-indigo-200"
+                    }`}
+                >
+                  <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isDone ? "bg-indigo-500 border-indigo-500" : "border-slate-300 bg-white"
+                    }`}>
+                    {isDone && <span className="text-[10px] text-white">✔</span>}
+                  </div>
+                  <span className={`text-sm font-medium ${isDone ? "text-indigo-800 line-through opacity-70" : "text-slate-700"}`}>
+                    {g.text}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -331,7 +469,7 @@ export default function GoalsPage({ onHome }: Props) {
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="예) 월 500 달성"
+                placeholder={isEmpty ? "예) 하루 10분 독서하기" : "예) 월 500 달성"}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-400"
               />
             </div>
@@ -410,31 +548,45 @@ export default function GoalsPage({ onHome }: Props) {
         {/* 목록 (전체 펼치기) */}
         <div className="space-y-6">
           {(["short", "mid", "long"] as Term[]).map((t) => {
-            const list = items.filter((g) => g.term === t);
+            const realList = items.filter((g) => g.term === t);
+            // 만약 전체가 비어있다면, 샘플 리스트 중 해당 term에 맞는 것만 표시
+            const displayList = isEmpty ? SAMPLE_GOALS.filter(g => g.term === t) : realList;
+
             return (
               <SectionCard
                 key={t}
                 title={`${TERM_LABEL[t]} 목표`}
-                subtitle={`${list.length}개의 목표가 있습니다.`}
+                subtitle={`${displayList.length}개의 목표가 있습니다.`}
                 className="!h-auto !min-h-0 p-3 md:p-4"
               >
-                {list.length === 0 ? (
+                {displayList.length === 0 ? (
                   <div className="py-4 text-center text-sm text-slate-400 bg-slate-50/50 rounded-lg border border-dashed border-slate-200">
                     등록된 {TERM_LABEL[t]} 목표가 없습니다.
                   </div>
                 ) : (
                   <ul className="divide-y divide-slate-100">
-                    {list.map((g) => {
+                    {displayList.map((g) => {
+                      const isSample = g.user_id === 'sample';
                       const isPicked = picks[g.term] === g.id;
+                      const isRoutine = routineIds.includes(g.id);
+
                       return (
-                        <li key={g.id} className="flex items-center justify-between gap-2 py-3 hover:bg-slate-50/50 transition-colors rounded-lg px-2 -mx-2">
-                          <button className="min-w-0 flex-1 truncate text-left group" onClick={() => handleEdit(g)} title="클릭하여 수정">
+                        <li key={g.id} className={`flex items-center justify-between gap-2 py-3 transition-colors rounded-lg px-2 -mx-2 ${isSample ? 'bg-slate-50 opacity-80' : 'hover:bg-slate-50/50'}`}>
+                          <button
+                            className="min-w-0 flex-1 truncate text-left group cursor-default"
+                            onClick={() => !isSample && handleEdit(g)}
+                            disabled={isSample}
+                            title={isSample ? '예시 항목입니다' : '클릭하여 수정'}
+                          >
                             <div className="flex items-center gap-2 mb-0.5">
-                              <span className="truncate text-sm font-medium text-slate-800 group-hover:text-emerald-700 transition-colors">
+                              <span className={`truncate text-sm font-medium ${isSample ? 'text-slate-600' : 'text-slate-800 group-hover:text-emerald-700'} transition-colors`}>
                                 {g.text}
                               </span>
                               {isPicked && (
                                 <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">홈 PICK</span>
+                              )}
+                              {isRoutine && (
+                                <span className="shrink-0 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">루틴</span>
                               )}
                             </div>
                             <div className="text-xs text-slate-500">
@@ -443,18 +595,29 @@ export default function GoalsPage({ onHome }: Props) {
                           </button>
 
                           <div className="flex shrink-0 items-center gap-1">
-                            {isPicked ? (
-                              <button onClick={() => setHomePick(g.term, null)} disabled={savingPick === g.term} className="rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-600 font-medium hover:bg-emerald-100" title="홈 표시 해제">
-                                해제
-                              </button>
-                            ) : (
-                              <button onClick={() => setHomePick(g.term, g.id)} disabled={savingPick === g.term} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500 hover:bg-slate-50 hover:text-emerald-600" title="홈 표시">
-                                표시
-                              </button>
+                            {!isSample && (
+                              <>
+                                <button
+                                  onClick={() => toggleRoutine(g.id)}
+                                  className={`rounded-md p-1.5 transition-colors ${isRoutine ? "text-indigo-600 bg-indigo-50" : "text-slate-300 hover:text-indigo-400"}`}
+                                  title={isRoutine ? "루틴 해제" : "루틴으로 설정"}
+                                >
+                                  🔄
+                                </button>
+                                {isPicked ? (
+                                  <button onClick={() => setHomePick(g.term, null)} disabled={savingPick === g.term} className="rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-600 font-medium hover:bg-emerald-100" title="홈 표시 해제">
+                                    해제
+                                  </button>
+                                ) : (
+                                  <button onClick={() => setHomePick(g.term, g.id)} disabled={savingPick === g.term} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500 hover:bg-slate-50 hover:text-emerald-600" title="홈 표시">
+                                    표시
+                                  </button>
+                                )}
+                                <button onClick={() => handleDelete(g.id)} className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors" title="삭제">
+                                  🗑
+                                </button>
+                              </>
                             )}
-                            <button onClick={() => handleDelete(g.id)} className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors" title="삭제">
-                              🗑
-                            </button>
                           </div>
                         </li>
                       );
@@ -466,6 +629,6 @@ export default function GoalsPage({ onHome }: Props) {
           })}
         </div>
       </div>
-    </PageShell>
+    </PageShell >
   );
 }

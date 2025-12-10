@@ -39,7 +39,7 @@ export default function InstallPWAButton() {
   return (
     <button
       onClick={onInstall}
-      className="px-3 py-2 rounded-xl text-white bg-sky-500 hover:bg-sky-600 shadow"
+      className="px-10 py-2.5 min-w-[200px] rounded-xl text-white font-bold bg-sky-500 hover:bg-sky-600 shadow-md transition-all active:scale-95"
       title="홈 화면에 앱 설치"
     >
       앱 설치

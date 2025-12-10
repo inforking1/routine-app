@@ -113,7 +113,7 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: true, // 개발서버에서는 SW 비활성(빌드에서만 활성)
+        enabled: false, // 개발 모드에서는 PWA 비활성화 (warning 제거)
       },
     }),
 

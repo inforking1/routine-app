@@ -61,7 +61,7 @@ function TodosPreview({ userId }: { userId?: string }) {
     })();
   }, [userId]);
   return items.length ? (
-    <ul className="divide-y divide-slate-100 text-sm">
+    <ul className="divide-y divide-slate-200 text-sm">
       {items.map((t) => (
         <li key={t.id} className="flex items-center justify-between py-2">
           <span className="truncate">{t.text}</span>
@@ -92,7 +92,7 @@ function AnniversariesPreview({ userId }: { userId: string }) {
       .slice(0, 3);
   }, [items]);
   return upcoming3.length ? (
-    <ul className="divide-y divide-slate-100 text-sm">
+    <ul className="divide-y divide-slate-200 text-sm">
       {upcoming3.map(({ it }) => (
         <li key={it.id} className="flex items-center justify-between py-2">
           <span className="truncate">{it.title}</span>
@@ -157,7 +157,7 @@ function GoalsPreview({ userId }: { userId: string }) {
   ];
 
   return (
-    <div className="divide-y divide-slate-100 text-sm text-slate-700">
+    <div className="divide-y divide-slate-200 text-sm text-slate-700">
       {rows.map(({ label, g }) => (
         <div key={label} className="flex items-center justify-between py-2">
           <span>
@@ -203,7 +203,7 @@ function BucketPreview({ userId }: { userId: string }) {
   }, [userId]);
 
   return items.length ? (
-    <ul className="divide-y divide-slate-100 text-sm">
+    <ul className="divide-y divide-slate-200 text-sm">
       {items.map((b) => (
         <li key={b.id} className="py-2">
           {b.title}
@@ -238,7 +238,7 @@ function GratitudePreview({ userId }: { userId: string }) {
     g.date ?? g.created_at.slice(0, 10);
 
   return items.length ? (
-    <ul className="divide-y divide-slate-100 text-sm">
+    <ul className="divide-y divide-slate-200 text-sm">
       {items.map((g) => (
         <li key={g.id} className="flex items-center gap-3 py-2">
           <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
@@ -294,7 +294,7 @@ export default function Home({ onNavigate }: HomeProps) {
     <PageShell showHeader={false}>
       <div className="mx-auto max-w-3xl xl:max-w-6xl space-y-8 pb-10">
         {/* 상단 인사 배너 */}
-        <MindTrigger className="mb-6 shadow-sm border-slate-200" onManage={() => onNavigate("pledges")} />
+        <MindTrigger className="mb-6" onManage={() => onNavigate("pledges")} />
 
         {/* 그리드 레이아웃: 섹션 간 구분감 강화 (높이 통일을 위해 items-stretch) */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 items-stretch">
@@ -387,12 +387,14 @@ export default function Home({ onNavigate }: HomeProps) {
             onAction={() => onNavigate("mission")}
             color="yellow"
           >
-            <p className="text-sm text-slate-800 font-medium">
-              🎁 7일 연속 완료 시 스탬프 적립
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              3개 모이면 커피 쿠폰 자동 지급! 현재 미션 진행 중...
-            </p>
+            <ul className="divide-y divide-slate-200 text-sm">
+              <li className="py-2 text-slate-800 font-medium">
+                🎁 7일 연속 완료 시 스탬프 적립
+              </li>
+              <li className="py-2 text-xs text-slate-500">
+                3개 모이면 커피 쿠폰 자동 지급! 현재 미션 진행 중...
+              </li>
+            </ul>
           </SectionCard>
 
           {/* 8. 버킷리스트 (Sky) */}

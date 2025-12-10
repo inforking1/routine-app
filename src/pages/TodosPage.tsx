@@ -1,27 +1,59 @@
-// src/pages/TodosPage.tsx
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import PageShell from "../components/PageShell";
 import SectionCard from "../components/SectionCard";
 import AuthCard from "../components/AuthCard";
-import useAuth from "../hooks/useAuth";
-import { supabase, sb } from "../lib/supabaseClient";
-import { createSource, type Todo } from "../utils/dataSource";
-// New Components
 import TodoFilter from "../components/todos/TodoFilter";
 import TodoItem from "../components/todos/TodoItem";
 import TodoModal from "../components/todos/TodoModal";
+import useAuth from "../hooks/useAuth";
+import { supabase, sb } from "../lib/supabaseClient";
+import {
+  createSource,
+  type Todo,
+} from "../utils/dataSource";
 
-// 날짜 유틸
-function daysBetweenToday(iso?: string | null) {
-  if (!iso) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const base = new Date(iso + "T00:00:00");
-  const t = today.getTime();
-  const b = base.getTime();
-  const diff = Math.round((b - t) / (1000 * 60 * 60 * 24));
-  return diff;
-}
+const daysBetweenToday = (d?: string | null) => {
+  if (!d) return null;
+  const today = new Date(new Date().toDateString());
+  const target = new Date(d);
+  return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+// Sample Data
+const SAMPLE_TODOS: Todo[] = [
+  {
+    id: 'sample-1',
+    user_id: 'sample',
+    text: '물 한 잔 마시기 (예시)',
+    done: false,
+    due: new Date().toISOString().split('T')[0],
+    pinned: false,
+    order: 0,
+    created_at: new Date().toISOString(),
+    priority: "normal",
+    tags: [],
+    is_recurring: false,
+    recurring_rule: null,
+    notes: "",
+    goal_id: null,
+  },
+  {
+    id: 'sample-2',
+    user_id: 'sample',
+    text: '5분 스트레칭 하기 (예시)',
+    done: false,
+    due: new Date().toISOString().split('T')[0],
+    pinned: false,
+    order: 1,
+    created_at: new Date().toISOString(),
+    priority: "normal",
+    tags: [],
+    is_recurring: false,
+    recurring_rule: null,
+    notes: "",
+    goal_id: null,
+  }
+];
 
 export default function TodosPage({ onHome }: { onHome?: () => void }) {
   const { user } = useAuth();
@@ -46,6 +78,8 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
   // DB Data
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const isEmpty = todos.length === 0;
 
   // Data Source
   const src = useMemo(() => (user ? createSource(user.id) : null), [user?.id]);
@@ -77,6 +111,23 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
 
   // Derived: Filtered List
   const { displayedTodos, groupedTodos, allTags, todayCompletedCount } = useMemo(() => {
+    // 🚀 If empty, use Sample or Empty Array based on logic
+    // But filters might confuse things. If empty, strictly show samples for "Today" view or simplify.
+    // The requirement says "If todo list is empty... show samples".
+    // We should bypass filters if it's the onboarding state (items.length === 0).
+
+    if (todos.length === 0) {
+      // Return samples only for 'today' view or generally?
+      // Requirement says "Samples...". Layout assumes list.
+      // Let's just return samples as displayedTodos.
+      return {
+        displayedTodos: SAMPLE_TODOS,
+        groupedTodos: [{ key: 'today', label: '오늘', items: SAMPLE_TODOS }],
+        allTags: [],
+        todayCompletedCount: 0
+      };
+    }
+
     let list = [...todos];
 
     // 0. Collect all tags
@@ -222,6 +273,7 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
   };
 
   const updateTodo = async (id: string, patch: Partial<Todo>) => {
+    if (id.startsWith('sample-')) return; // 샘플 수정 불가
     if (!src) return;
     const before = todos;
     setTodos(prev => prev.map(t => t.id === id ? { ...t, ...patch } : t));
@@ -236,6 +288,8 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
 
   const onDrop = async (overId: string, draggingId: string | null) => {
     if (!src || !draggingId || draggingId === overId || sortBy !== 'manual' || viewMode !== 'today') return;
+    if (draggingId.startsWith('sample-') || overId.startsWith('sample-')) return; // 샘플 드래그 불가
+
     const ids = displayedTodos.map((t) => t.id);
     const from = ids.indexOf(draggingId);
     const to = ids.indexOf(overId);
@@ -289,6 +343,23 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
 
   return (
     <PageShell title="할 일" onHome={onHome}>
+
+      {/* 🚀 Onboarding Guide Card */}
+      {isEmpty && (
+        <div className="mb-4 rounded-2xl bg-indigo-50 p-5 shadow-sm border border-indigo-100 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-start gap-4">
+            <span className="text-3xl">📝</span>
+            <div>
+              <h3 className="text-lg font-bold text-indigo-900 mb-1">오늘 이렇게 시작해보세요</h3>
+              <p className="text-sm text-indigo-700 leading-relaxed">
+                작은 성취가 모여 큰 변화를 만듭니다.<br />
+                오늘 꼭 하고 싶은 <strong>한 가지 일</strong>을 적어볼까요?
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <SectionCard
         title="할 일(Todos)"
         subtitle="오늘 해야 할 일을 관리하세요."
@@ -327,7 +398,7 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="할 일을 입력하세요..."
+            placeholder={isEmpty ? "예) 오늘 꼭 하고 싶은 한 가지를 적어보세요" : "할 일을 입력하세요..."}
             className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
           />
           <input
@@ -422,16 +493,18 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
                     key={todo.id}
                     todo={todo}
                     onToggle={() => updateTodo(todo.id, { done: !todo.done })}
-                    onClickBody={() => setSelectedTodo(todo)}
+                    onClickBody={() => {
+                      if (todo.user_id !== 'sample') setSelectedTodo(todo);
+                    }}
                     isDragging={false}
                     // Drop Targets
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => onDrop(todo.id, e.dataTransfer.getData("text/plain"))}
                     // Drag Source
                     dragHandleProps={{
-                      draggable: true,
+                      draggable: todo.user_id !== 'sample',
                       onDragStart: (e: any) => {
-                        if (sortBy !== 'manual' || viewMode !== 'today') return;
+                        if (sortBy !== 'manual' || viewMode !== 'today' || todo.user_id === 'sample') return;
                         e.dataTransfer.setData("text/plain", todo.id);
                       }
                     }}
@@ -461,7 +534,9 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
                       key={todo.id}
                       todo={todo}
                       onToggle={() => updateTodo(todo.id, { done: !todo.done })}
-                      onClickBody={() => setSelectedTodo(todo)}
+                      onClickBody={() => {
+                        if (todo.user_id !== 'sample') setSelectedTodo(todo);
+                      }}
                     />
                   ))}
                 </ul>

@@ -58,19 +58,19 @@ export default function NewsFeed({ feeds, limit = 20 }: Props) {
       )}
       {error && <p className="text-sm text-rose-600">오류: {error}</p>}
 
-      <ul className="list-disc pl-5 space-y-1">
+      <ul className="divide-y divide-slate-200">
         {items.map((it) => (
-          <li key={it.link} className="text-sm">
+          <li key={it.link} className="py-2 text-sm flex flex-col gap-0.5">
             <a
               href={it.link}
               target="_blank"
               rel="noreferrer"
-              className="font-medium hover:underline"
+              className="font-medium hover:underline truncate text-slate-800"
             >
               {it.title}
             </a>
             {it.source && (
-              <span className="ml-2 text-xs text-slate-500">· {it.source}</span>
+              <span className="text-xs text-slate-500 block">· {it.source}</span>
             )}
           </li>
         ))}

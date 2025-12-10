@@ -8,7 +8,10 @@ type Props = {
   onManage?: () => void; // 전용 페이지로 이동
 };
 
-const MAX_SELECTED = 2;
+const SAMPLE_PLEDGES = [
+  "오늘 나는 나를 위해 작은 실천 하나를 선택합니다. (예시)",
+  "작은 다짐이 큰 변화를 만든다는 것을 기억합니다. (예시)",
+];
 
 export default function MindTrigger({ className = "", onManage }: Props) {
   const auth = useAuth() as any;
@@ -36,59 +39,62 @@ export default function MindTrigger({ className = "", onManage }: Props) {
   }, [user?.id]);
 
   const selected = useMemo(
-    () => items.filter(i => i.selected).slice(0, MAX_SELECTED),
+    () => items.filter(i => i.selected),
     [items]
   );
 
+  const hasPledge = selected.length > 0;
+  // If real pledges exist, show the most recent one (index 0 since DESC sort).
+  // If not, show the 2 samples.
+
   return (
     <section
-      className={`rounded-2xl border border-slate-200 bg-white/70 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60 ${className}`}
+      onClick={onManage}
+      className={`relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-100 p-6 shadow-sm transition-all hover:shadow-md cursor-pointer ${className}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-            오늘의 다짐
-          </h2>
-          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-            오늘도 10번씩만 읽어보세요. 반드시 실천할 수 있습니다.
-          </p>
+      {/* Decorative background accent - subtle */}
+      <div className="absolute -right-4 -top-10 h-32 w-32 rounded-full bg-white/40 blur-3xl pointer-events-none" />
+
+      {/* Header */}
+      <div className="relative flex items-center justify-between mb-4">
+        <div className="flex items-center gap-1.5 opacity-90">
+          <span className="text-xs font-bold uppercase tracking-wider text-gray-700">오늘의 다짐</span>
         </div>
-        <button
-          onClick={onManage}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-        >
-          관리
-        </button>
+        <div className="text-lg text-gray-400 opacity-70">✨</div>
       </div>
 
-      {/* 예전 스타일: 선택된 2개 카드 */}
-      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {loading && (
-          <div className="col-span-2 text-sm text-slate-500">불러오는 중…</div>
-        )}
-
-        {!loading && selected.length === 0 && (
-          <div className="col-span-2">
-            <div className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-              아직 선택된 다짐이 없어요. <span className="underline decoration-slate-300">관리</span>에서 추가·선택해 보세요.
-            </div>
+      {/* Content */}
+      <div className="relative">
+        {loading ? (
+          <div className="text-sm text-gray-400">마음을 읽어오는 중...</div>
+        ) : hasPledge ? (
+          // Case 1: Real Pledge (Show Top 1)
+          <div className="space-y-1">
+            <p className="text-lg font-bold text-gray-700 leading-snug break-keep">
+              &quot;{selected[0].text}&quot;
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              {selected.length > 1 ? `외 ${selected.length - 1}개의 다짐이 더 있어요` : '오늘도 멋진 하루를 응원합니다'}
+            </p>
+          </div>
+        ) : (
+          // Case 2: Samples (Show 2 items)
+          <div className="space-y-2">
+            {SAMPLE_PLEDGES.map((text, idx) => (
+              <div key={idx} className="flex gap-2 items-start">
+                <span className="shrink-0 text-indigo-300 mt-1 text-[10px]">●</span>
+                <p className="text-[15px] text-gray-600 leading-snug font-medium break-keep">
+                  {text}
+                </p>
+              </div>
+            ))}
           </div>
         )}
+      </div>
 
-        {selected.map((item, idx) => (
-          <div
-            key={item.id}
-            className={[
-              "rounded-xl p-4 text-sm leading-relaxed shadow-sm",
-              idx === 0
-                ? "border border-red-200 bg-red-50/80 text-red-900 dark:border-red-900/40 dark:bg-red-900/30 dark:text-red-100"
-                : "border border-blue-200 bg-blue-50/80 text-blue-900 dark:border-blue-900/40 dark:bg-blue-900/30 dark:text-blue-100",
-            ].join(" ")}
-          >
-            <span className="block text-xs opacity-70">{idx === 0 ? "다짐 1" : "다짐 2"}</span>
-            <p className="mt-1 text-[15px] break-words">“{item.text}”</p>
-          </div>
-        ))}
+      {/* Interaction Hint */}
+      <div className="absolute bottom-4 right-4 text-gray-400/50 text-[10px] pointer-events-none">
+        탭하여 관리
       </div>
     </section>
   );
