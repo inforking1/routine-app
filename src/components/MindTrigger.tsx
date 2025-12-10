@@ -44,36 +44,34 @@ export default function MindTrigger({ className = "", onManage }: Props) {
   );
 
   const hasPledge = selected.length > 0;
-  // If real pledges exist, show the most recent one (index 0 since DESC sort).
-  // If not, show the 2 samples.
 
   return (
     <section
       onClick={onManage}
-      className={`relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-100 p-6 shadow-sm transition-all hover:shadow-md cursor-pointer ${className}`}
+      className={`relative overflow-hidden rounded-[24px] shadow-md px-6 py-7 bg-gradient-to-br from-[#EEF1FF] via-[#F6F9FF] to-[#FFEFF4] transition-all hover:shadow-lg cursor-pointer ${className}`}
     >
       {/* Decorative background accent - subtle */}
       <div className="absolute -right-4 -top-10 h-32 w-32 rounded-full bg-white/40 blur-3xl pointer-events-none" />
 
       {/* Header */}
-      <div className="relative flex items-center justify-between mb-4">
+      <div className="relative mb-2 flex items-center justify-between">
         <div className="flex items-center gap-1.5 opacity-90">
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-700">오늘의 다짐</span>
+          <span className="text-[18px] font-semibold text-slate-900 tracking-tight">오늘의 다짐</span>
         </div>
-        <div className="text-lg text-gray-400 opacity-70">✨</div>
+        <div className="text-[22px] text-slate-400 opacity-90">✨</div>
       </div>
 
       {/* Content */}
       <div className="relative">
         {loading ? (
-          <div className="text-sm text-gray-400">마음을 읽어오는 중...</div>
+          <div className="text-sm text-slate-400">마음을 읽어오는 중...</div>
         ) : hasPledge ? (
           // Case 1: Real Pledge (Show Top 1)
           <div className="space-y-1">
-            <p className="text-lg font-bold text-gray-700 leading-snug break-keep">
+            <p className="text-[17px] leading-relaxed text-slate-900 font-medium break-keep">
               &quot;{selected[0].text}&quot;
             </p>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="mt-3 text-[13px] text-slate-600">
               {selected.length > 1 ? `외 ${selected.length - 1}개의 다짐이 더 있어요` : '오늘도 멋진 하루를 응원합니다'}
             </p>
           </div>
@@ -83,7 +81,7 @@ export default function MindTrigger({ className = "", onManage }: Props) {
             {SAMPLE_PLEDGES.map((text, idx) => (
               <div key={idx} className="flex gap-2 items-start">
                 <span className="shrink-0 text-indigo-300 mt-1 text-[10px]">●</span>
-                <p className="text-[15px] text-gray-600 leading-snug font-medium break-keep">
+                <p className="text-[17px] leading-relaxed text-slate-900 font-medium break-keep">
                   {text}
                 </p>
               </div>
@@ -93,7 +91,7 @@ export default function MindTrigger({ className = "", onManage }: Props) {
       </div>
 
       {/* Interaction Hint */}
-      <div className="absolute bottom-4 right-4 text-gray-400/50 text-[10px] pointer-events-none">
+      <div className="absolute bottom-4 right-4 text-slate-400/50 text-[10px] pointer-events-none">
         탭하여 관리
       </div>
     </section>

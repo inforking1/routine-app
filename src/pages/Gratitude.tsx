@@ -176,10 +176,11 @@ export default function Gratitude({ onHome }: { onHome: () => void }) {
         <SectionCard
           title="오늘의 감사"
           subtitle="작은 감사가 행복을 키웁니다"
+          className="bg-[#F5F7FF] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150"
         >
           {/* 🚀 Onboarding Hint */}
           {isEmpty && (
-            <div className="mb-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 p-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+            <div className="mb-4 text-[13px] text-indigo-700 bg-indigo-50 border border-indigo-100 p-4 rounded-[16px] flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
               <span>📔</span>
               <p>하루에 3가지 감사한 일을 적어보세요. 삶의 만족도가 올라갑니다.</p>
             </div>
@@ -199,18 +200,18 @@ export default function Gratitude({ onHome }: { onHome: () => void }) {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="rounded-xl border border-slate-300 px-3 py-3 text-base sm:py-2 sm:text-sm outline-none focus:ring-2 focus:ring-rose-300"
+              className="rounded-xl border border-slate-300 px-3 py-3 text-base sm:py-2 sm:text-sm outline-none focus:ring-2 focus:ring-rose-400"
               disabled={!user || busy}
             />
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={isEmpty ? "예) 맛있는 점심을 먹어 감사합니다." : "예) 아침 햇살 덕분에 기분이 좋았다"}
-              className="w-full rounded-xl border border-slate-300 px-3 py-3 text-base sm:py-2 sm:text-sm outline-none focus:ring-2 focus:ring-rose-300"
+              className="w-full rounded-xl border border-slate-300 px-3 py-3 text-base sm:py-2 sm:text-sm outline-none focus:ring-2 focus:ring-rose-400"
               disabled={!user || busy}
             />
             <button
-              className="rounded-xl bg-rose-500 px-4 py-3 text-base text-white hover:bg-rose-600 disabled:opacity-60 sm:px-3 sm:py-2 sm:text-sm font-bold shadow-sm"
+              className="rounded-full bg-rose-500 px-5 py-3 text-base text-white hover:bg-rose-600 disabled:opacity-60 sm:px-4 sm:py-2 sm:text-sm font-bold shadow-sm transition-transform active:scale-95"
               disabled={!user || busy}
             >
               {busy ? "기록 중…" : "기록"}
@@ -224,13 +225,14 @@ export default function Gratitude({ onHome }: { onHome: () => void }) {
         <SectionCard
           title="내 기록"
           subtitle="쌓여가는 감사 마음"
+          className="bg-[#F5F7FF] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150"
         >
           <div className="mb-4">
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="키워드로 검색..."
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-rose-300"
+              className="w-full rounded-full border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-rose-400"
               disabled={isEmpty && !q}
             />
           </div>
@@ -244,13 +246,13 @@ export default function Gratitude({ onHome }: { onHome: () => void }) {
                 <p className="text-sm text-slate-500">아직 기록이 없습니다.</p>
               </div>
             ) : (
-              <ul className="divide-y divide-slate-200 text-sm">
+              <ul className="divide-y divide-[#E1E6FF] text-[14px]">
                 {displayItems.map((it) => {
                   const isSample = it.user_id === 'sample';
                   return (
                     <li
                       key={it.id}
-                      className={`group relative flex items-center justify-between py-3 px-2 -mx-2 rounded-lg transition-colors cursor-pointer active:bg-slate-100 ${isSample ? 'bg-slate-50/50 opacity-80' : 'hover:bg-slate-50'}`}
+                      className={`group relative flex items-center justify-between py-3 px-2 -mx-2 rounded-lg transition-colors cursor-pointer active:bg-slate-100 ${isSample ? 'bg-slate-50/50 opacity-80' : 'md:hover:bg-white/50'}`}
                       onClick={() => !isSample && setSelectedEntry(it)} // Sample not clickable for detail? Or allow detail but block edit.
                     // Let's allow clicking sample to see detail, but hide edit buttons there.
                     // Actually, let's block clicking samples to avoid confusion if they can't edit.

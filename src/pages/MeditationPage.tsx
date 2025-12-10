@@ -314,7 +314,7 @@ export default function MeditationPage({
           <MeditationOfTheDay variant="card" className="h-full" />
 
           {/* Card 2: 스트릭 (나의 루틴) */}
-          <SectionCard title="나의 루틴" className="h-full bg-white/60 border-indigo-100 flex flex-col">
+          <SectionCard title="나의 루틴" className="h-full bg-[#E0F2FE] border-indigo-100 flex flex-col md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150">
             <div className="flex-1 flex flex-col items-center justify-center py-4 text-center">
               <div className="text-5xl font-bold text-indigo-600 mb-2 tabular-nums">
                 {streak}<span className="text-lg text-indigo-400 font-normal">일</span>
@@ -341,7 +341,7 @@ export default function MeditationPage({
         <SectionCard
           title="집중 타이머"
           subtitle="호흡에 온전히 집중해보세요"
-          className="bg-white/80 border-emerald-100 w-full"
+          className="bg-[#F5F7FF] border-emerald-100 w-full md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150"
         >
           <div className="mx-auto max-w-3xl py-2">
             <MeditationTimer defaultMinutes={3} onComplete={handleCheckIn} />
@@ -354,8 +354,8 @@ export default function MeditationPage({
           {/* Left Column: Question + Memo */}
           <div className="flex flex-col gap-6">
             {/* Card 1: 오늘의 질문 */}
-            <SectionCard title="오늘의 질문" className="bg-amber-50/60 border-amber-100 flex flex-col">
-              <p className="text-lg font-medium text-amber-900 leading-relaxed mb-4 min-h-[3.5rem]">
+            <SectionCard title="오늘의 질문" className="bg-[#FFF8E1] border-amber-100 flex flex-col md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150">
+              <p className="text-[16px] font-medium text-amber-900 leading-relaxed mb-4 min-h-[3.5rem]">
                 Q. {dailyQ}
               </p>
 
@@ -364,13 +364,13 @@ export default function MeditationPage({
                   value={dailyAnswer}
                   onChange={(e) => setDailyAnswer(e.target.value)}
                   placeholder="여기에 답변을 적어보세요."
-                  className="w-full flex-1 min-h-[120px] rounded-lg border border-amber-200 bg-white/50 p-3 text-sm placeholder:text-slate-400 focus:bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-200 outline-none transition resize-none"
+                  className="w-full flex-1 min-h-[120px] rounded-[16px] border border-amber-200 bg-white/50 p-4 text-[14px] placeholder:text-slate-400 focus:bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-200 outline-none transition resize-none"
                 />
                 <div className="flex justify-end">
                   <button
                     onClick={handleSaveAnswer}
                     disabled={!dailyAnswer.trim()}
-                    className="rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    className="rounded-full bg-amber-600 px-5 py-2.5 text-[13px] font-bold text-white shadow-sm hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition hover:scale-105 active:scale-95"
                   >
                     답변 저장하기
                   </button>
@@ -382,14 +382,14 @@ export default function MeditationPage({
             <SectionCard
               title="자유 메모"
               subtitle="떠오르는 생각 기록"
-              className="bg-white flex flex-col flex-1"
+              className="bg-white flex flex-col flex-1 md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150"
             >
               <div className="flex-1 flex flex-col">
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="답변을 적거나, 지금 느끼는 감정을 기록하세요..."
-                  className="w-full flex-1 min-h-[160px] rounded-xl border border-slate-200 p-4 text-sm leading-relaxed outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 resize-none transition"
+                  className="w-full flex-1 min-h-[160px] rounded-[16px] border border-slate-200 p-4 text-[14px] leading-relaxed outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 resize-none transition"
                 />
                 <div className="mt-4 flex items-center justify-between">
                   <div className="text-xs text-slate-400">
@@ -402,7 +402,7 @@ export default function MeditationPage({
                   <button
                     onClick={handleSaveLog}
                     disabled={!note.trim()}
-                    className="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    className="rounded-full bg-slate-900 px-5 py-2.5 text-[13px] font-bold text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition hover:scale-105 active:scale-95"
                   >
                     저장
                   </button>
@@ -415,9 +415,9 @@ export default function MeditationPage({
           <SectionCard
             title="지난 기록"
             subtitle={`총 ${logs.length}개`}
-            className="bg-slate-50/50 border-slate-200 h-full flex flex-col min-h-[500px] lg:min-h-auto"
+            className="bg-[#F8FAFC] border-slate-200 h-full flex flex-col min-h-[500px] lg:min-h-auto md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150"
           >
-            <div className="flex-1 overflow-y-auto pr-2 space-y-3 max-h-[600px] lg:max-h-[calc(100%-3rem)]">
+            <div className="flex-1 overflow-y-auto pr-2 space-y-3 max-h-[600px] lg:max-h-[calc(100%-3rem)] custom-scrollbar">
               {logs.length === 0 ? (
                 <div className="flex h-full items-center justify-center text-slate-400 text-sm">
                   아직 기록이 없습니다.
@@ -425,7 +425,7 @@ export default function MeditationPage({
               ) : (
                 <div className="space-y-3 pb-2">
                   {logs.map((log) => (
-                    <div key={log.id} className="group relative rounded-xl bg-white p-3 shadow-sm border border-slate-100 transition hover:shadow-md">
+                    <div key={log.id} className="group relative rounded-[16px] bg-white p-4 shadow-sm border border-slate-100 transition hover:shadow-md">
                       <div className="mb-2 flex items-start justify-between">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium text-slate-400">
@@ -443,7 +443,7 @@ export default function MeditationPage({
                           <Trash2 size={12} />
                         </button>
                       </div>
-                      <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed line-clamp-4">
+                      <p className="text-[13px] text-slate-700 whitespace-pre-wrap leading-relaxed line-clamp-4">
                         {log.note}
                       </p>
                       {log.tags && log.tags.length > 0 && (

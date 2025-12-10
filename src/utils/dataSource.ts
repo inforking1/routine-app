@@ -29,6 +29,8 @@ export type Anniversary = {
   user_id: UUID;
   title: string;
   date: string;               // 'YYYY-MM-DD'
+  type?: 'solar' | 'lunar';
+  is_recurring?: boolean;
   created_at: string;
 };
 
@@ -112,7 +114,7 @@ export function createSource(userId: UUID) {
     async listAnniversaries(limit?: number): Promise<Anniversary[]> {
       let q = supabase
         .from("anniversaries")
-        .select("id,user_id,title,date,created_at")
+        .select("id,user_id,title,date,type,is_recurring,created_at")
         .eq("user_id", userId)
         .order("date", { ascending: true });
       if (limit) q = q.limit(limit);

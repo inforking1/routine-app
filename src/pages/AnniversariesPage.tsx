@@ -356,30 +356,32 @@ export default function AnniversariesPage({ onHome }: Props) {
 
   return (
     <PageShell title="기념일" onHome={onHome}>
-      <SectionCard title="기념일(Anniversaries)" subtitle="중요한 날 잊지 않기">
+      <SectionCard title="기념일(Anniversaries)" subtitle="중요한 날 잊지 않기" className="bg-[#F3F5FE] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150">
 
         {/* 🚀 Onboarding Hint */}
-        {isEmpty && (
-          <div className="mb-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 p-3 rounded-lg flex items-center gap-2">
-            <span>💡</span>
-            <p>소중한 사람의 <strong>생일·기념일</strong>을 등록해두면 달력에서 한눈에 볼 수 있어요.</p>
-          </div>
-        )}
+        {
+          isEmpty && (
+            <div className="mb-4 text-[13px] text-indigo-700 bg-indigo-50 border border-indigo-100 p-4 rounded-[16px] flex items-center gap-2">
+              <span>💡</span>
+              <p>소중한 사람의 <strong>생일·기념일</strong>을 등록해두면 달력에서 한눈에 볼 수 있어요.</p>
+            </div>
+          )
+        }
 
         {/* 입력 */}
-        <form className="mb-4 flex flex-col gap-2 p-3 bg-slate-50 rounded-xl" onSubmit={handleSubmit}>
+        <form className="mb-4 flex flex-col gap-2 p-4 bg-slate-50 rounded-[22px]" onSubmit={handleSubmit}>
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={isEmpty ? "예) 부모님 결혼기념일" : "제목 (예: 부모님 결혼기념일)"}
-              className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-300"
+              className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-400"
             />
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full sm:w-auto rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-300"
+              className="w-full sm:w-auto rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-400"
             />
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -416,14 +418,14 @@ export default function AnniversariesPage({ onHome }: Props) {
                 <span className="text-sm text-slate-700 font-medium">매년 반복</span>
               </label>
             </div>
-            <button type="submit" className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-bold text-white hover:bg-rose-600 shadow-sm ml-auto">
+            <button type="submit" className="rounded-full bg-rose-500 px-4 py-2 text-sm font-bold text-white hover:bg-rose-600 shadow-sm ml-auto">
               추가
             </button>
           </div>
         </form>
 
         {/* 다가오는 3개 */}
-        <ul className="divide-y divide-slate-200 text-sm">
+        <ul className="divide-y divide-[#E1E6FF] text-[14px]">
           {upcoming3.map((item) => {
             const a = item as Anniversary & { next: Date };
             const isEditing = editId === a.id;
@@ -581,10 +583,10 @@ export default function AnniversariesPage({ onHome }: Props) {
             </li>
           )}
         </ul>
-      </SectionCard>
+      </SectionCard >
 
       {/* 달력 */}
-      <SectionCard title="달력" subtitle="월별 기념일 확인">
+      <SectionCard title="달력" subtitle="월별 기념일 확인" className="bg-[#F3F5FE] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150">
         <div className="mb-2 flex items-center justify-between">
           <button
             type="button"
@@ -654,9 +656,10 @@ export default function AnniversariesPage({ onHome }: Props) {
             }
 
             return (
+
               <div
                 key={dayNum}
-                className={`min-h-[80px] rounded-lg border p-1 ${todayFlag ? "border-rose-400 ring-1 ring-rose-100" : "border-slate-100"
+                className={`min-h-[80px] rounded-[16px] border p-1 ${todayFlag ? "border-rose-400 ring-1 ring-rose-100" : "border-slate-100"
                   } bg-white flex flex-col`}
               >
                 <div className="mb-1 flex items-center justify-between">

@@ -3,12 +3,21 @@
 /* 공통 카드 컴포넌트 */
 @layer components {
   .card {
-    @apply rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-5
-           dark:bg-slate-800 dark:ring-slate-700;
+    @apply rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-5 dark:bg-slate-800 dark:ring-slate-700;
   }
 }
 
 /* 기본 톤 (선택) */
-html, body, #root { height: 100%; }
-body { @apply bg-slate-50 text-slate-900 antialiased; }
-.dark body { @apply bg-slate-900 text-slate-100; }
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-[#F6F8FC] text-slate-900 antialiased;
+}
+
+.dark body {
+  @apply bg-slate-900 text-slate-100;
+}

@@ -44,13 +44,13 @@ export default function TopNav() {
   const closeMenu = () => setMoreOpen(false);
 
   const iconBtn =
-    "inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs md:text-sm text-slate-700 hover:bg-slate-50";
+    "inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white/70 px-2.5 py-1 text-xs md:text-sm text-slate-700 hover:bg-slate-50 transition-colors";
   const tabBase =
-    "rounded-xl border border-slate-300 px-3 py-1.5 text-sm transition-colors";
+    "inline-flex items-center justify-center rounded-full px-4 py-2 text-[14px] font-medium transition-all duration-150";
   const tabActive =
-    "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-600 hover:text-white";
-  const tabIdle = "bg-white hover:bg-slate-50";
-  const tabLocked = "opacity-60 cursor-pointer";
+    "bg-emerald-600 text-white shadow-[0_8px_20px_rgba(4,120,87,0.45)] md:translate-y-[1px]";
+  const tabIdle = "bg-white/80 border border-slate-200/70 text-slate-700 hover:bg-white hover:border-slate-300 hover:text-slate-900";
+  const tabLocked = "bg-white/50 border border-slate-200/50 text-slate-400 opacity-70 cursor-pointer";
 
   const goOrAuth = (to: string) => {
     if (authed) navigate(to);
@@ -71,7 +71,7 @@ export default function TopNav() {
     );
 
   return (
-    <nav className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <nav className="sticky top-0 z-40 w-full border-b border-indigo-50/50 bg-[#F4F6FB]/80 backdrop-blur-md">
       <div className="mx-auto max-w-6xl px-4">
         {/* Row 1 */}
         <div className="flex items-center justify-between py-3">

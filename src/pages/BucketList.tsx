@@ -185,10 +185,10 @@ export default function BucketList({
 
   return (
     <PageShell title="나의 버킷리스트" onHome={onHome}>
-      <SectionCard title="버킷리스트" subtitle="올해 꼭 해보고 싶은 것들">
+      <SectionCard title="버킷리스트" subtitle="올해 꼭 해보고 싶은 것들" className="bg-[#F5F7FF] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150">
         {/* Onboarding Guide */}
         {isEmpty && (
-          <div className="mb-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 p-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <div className="mb-4 text-[13px] text-indigo-700 bg-indigo-50 border border-indigo-100 p-4 rounded-[16px] flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
             <span>✨</span>
             <p>마음속 품어왔던 <strong>버킷리스트</strong>를 작성하고, 홈 화면에 띄워보세요.</p>
           </div>
@@ -208,9 +208,9 @@ export default function BucketList({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={isEmpty ? "예) 부모님과 제주 한라산 등반" : "이루고 싶은 꿈을 입력하세요"}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-300"
+            className="w-full rounded-full border border-slate-300 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-300"
           />
-          <button className="rounded-xl bg-blue-500 px-3 py-2 text-white hover:bg-blue-600">
+          <button className="rounded-full bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 font-bold shadow-sm transition-transform active:scale-95">
             추가
           </button>
         </form>
@@ -227,7 +227,7 @@ export default function BucketList({
           </button>
         </div>
 
-        <ul className="divide-y divide-slate-200">
+        <ul className="divide-y divide-[#E1E6FF]">
           {displayList.map((it) => {
             const isSample = it.user_id === 'sample';
             const picked = pickedIds.has(it.id);
@@ -256,7 +256,7 @@ export default function BucketList({
             };
 
             return (
-              <li key={it.id} className={`flex items-center justify-between py-2 ${isSample ? 'opacity-75' : ''}`}>
+              <li key={it.id} className={`flex items-center justify-between py-3 px-2 -mx-2 rounded-lg transition-colors ${isSample ? 'opacity-75' : 'md:hover:bg-white/50'}`}>
                 <div className="flex items-center gap-3">
                   {/* 🌟 홈표시 토글 */}
                   <button

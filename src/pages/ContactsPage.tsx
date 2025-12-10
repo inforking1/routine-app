@@ -259,16 +259,16 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
     <PageShell title="안부 (Contacts)" onHome={onHome}>
       {/* 1. Today's Care Picks */}
       {mode === "list" && (
-        <div className="mb-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 p-5 shadow-sm border border-indigo-100">
+        <div className="mb-6 rounded-[22px] bg-[#F5F7FF] p-6 shadow-sm border border-indigo-100">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-indigo-900">오늘의 안부 👋</h2>
-              <p className="text-xs text-indigo-600">
+              <h2 className="text-[18px] font-semibold text-slate-900">오늘의 안부 👋</h2>
+              <p className="text-[13px] text-slate-600">
                 {isEmpty ? "자주 안부를 전하고 싶은 분들을 등록해두면, 오늘 연락드리면 좋은 분이 자동으로 추천됩니다." : "하루 3명에게 안부를 전해보세요."}
               </p>
             </div>
             <div className="text-right">
-              <span className="text-xs font-semibold text-indigo-500 block">오늘 완료</span>
+              <span className="text-[12px] font-semibold text-indigo-500 block">오늘 완료</span>
               <span className="text-xl font-bold text-indigo-700">{todayContactCount} / 3</span>
             </div>
           </div>
@@ -297,7 +297,7 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
                 }
 
                 return (
-                  <div key={p.id} className={`rounded-xl border p-3 bg-white shadow-sm transition-all ${isDone ? "opacity-60 border-indigo-100 bg-indigo-50/50" : "border-indigo-100 hover:border-indigo-300 hover:shadow-md"} ${isSample ? 'opacity-80' : ''}`}>
+                  <div key={p.id} className={`rounded-[16px] border p-4 bg-white shadow-sm transition-all md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150 ${isDone ? "opacity-60 border-indigo-100 bg-indigo-50/50" : "border-indigo-100"} ${isSample ? 'opacity-80' : ''}`}>
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <div className="font-bold text-slate-800 flex items-center gap-1">
@@ -352,12 +352,12 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="검색: 이름/전화/태그"
-            className="h-10 flex-[2_1_220px] min-w-[200px] rounded-xl border border-slate-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+            className="h-10 flex-[2_1_220px] min-w-[200px] rounded-full border border-slate-300 px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
           />
           <select
             value={tagFilter}
             onChange={(e) => setTagFilter(e.target.value)}
-            className="h-10 flex-[1_1_150px] min-w-[120px] rounded-xl border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-indigo-400"
+            className="h-10 flex-[1_1_150px] min-w-[120px] rounded-full border border-slate-300 px-4 text-sm focus:ring-2 focus:ring-indigo-400"
           >
             <option value="">태그 전체</option>
             {uniqueTags.map((t) => (
@@ -367,7 +367,7 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
           <select
             value={impFilter}
             onChange={(e) => setImpFilter(e.target.value ? parseInt(e.target.value) : "")}
-            className="h-10 flex-[1_1_150px] min-w-[120px] rounded-xl border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-indigo-400"
+            className="h-10 flex-[1_1_150px] min-w-[120px] rounded-full border border-slate-300 px-4 text-sm focus:ring-2 focus:ring-indigo-400"
           >
             <option value="">중요도 전체</option>
             <option value="3">★ 최우선</option>
@@ -376,7 +376,7 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
           </select>
           <button
             onClick={() => { setQ(""); setTagFilter(""); setImpFilter(""); }}
-            className="h-10 rounded-xl border border-slate-300 px-4 text-sm hover:bg-slate-50"
+            className="h-10 rounded-full border border-slate-300 px-4 text-sm hover:bg-slate-50"
           >
             초기화
           </button>
@@ -386,13 +386,13 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
         <div className="flex flex-none flex-nowrap items-center gap-2 self-start lg:self-auto">
           <button
             onClick={() => setMode("create")}
-            className="h-10 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-4 text-sm hover:bg-slate-50"
+            className="h-10 whitespace-nowrap rounded-full border border-slate-300 bg-white px-5 text-sm font-medium hover:bg-slate-50 transition-colors"
           >
             + 연락처 추가
           </button>
           <button
             onClick={fetchAll}
-            className="h-10 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-4 text-sm hover:bg-slate-50 disabled:opacity-50"
+            className="h-10 whitespace-nowrap rounded-full border border-slate-300 bg-white px-5 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 transition-colors"
             disabled={loading || busy}
           >
             새로고침
@@ -402,7 +402,7 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
 
       {/* 목록 */}
       {mode === "list" && (
-        <div className="overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
           {loading ? (
             <div className="p-6 text-sm text-slate-500">불러오는 중…</div>
           ) : error ? (
@@ -414,7 +414,7 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
           ) : (
             <>
               {/* 📱 모바일 카드 */}
-              <ul className="divide-y divide-slate-100 md:hidden">
+              <ul className="divide-y divide-[#E1E6FF] md:hidden">
                 {filtered.map((c) => {
                   const isSample = c.user_id === 'sample';
                   return (
@@ -487,11 +487,11 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
                       <th className="w-32 text-right">액션</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[#E1E6FF]">
                     {filtered.map((c) => {
                       const isSample = c.user_id === 'sample';
                       return (
-                        <tr key={c.id} className={`hover:bg-slate-50 [&>td]:px-4 [&>td]:py-3 ${isSample ? 'bg-slate-50/50 opacity-80' : ''}`}>
+                        <tr key={c.id} className={`md:hover:bg-slate-50 transition-colors [&>td]:px-4 [&>td]:py-3 ${isSample ? 'bg-slate-50/50 opacity-80' : ''}`}>
                           <td>
                             <div className={`font-medium ${isSample ? 'text-slate-600' : ''}`}>{c.name}</div>
                             <div className="text-xs text-slate-400">{(c.tags ?? []).join(", ")}</div>
@@ -568,7 +568,7 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
 
       {/* 추가 / 수정 */}
       {(mode === "create" || (mode === "edit" && editing)) && (
-        <div className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm">
+        <div className="rounded-[22px] border border-slate-200 bg-white p-6 shadow-sm">
           {/* Header is now inside ContactForm for better cohesion, providing a clean card */}
           <ContactForm
             initial={mode === "edit" ? editing ?? undefined : undefined}

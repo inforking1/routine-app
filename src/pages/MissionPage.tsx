@@ -175,23 +175,40 @@ export default function MissionPage({ onHome }: Props) {
   const displayList = isEmpty ? SAMPLE_MISSIONS : missions;
 
   return (
-    <PageShell title="미션 & 리워드" onHome={onHome}>
+    <PageShell title="미션 & 리워드" onHome={onHome} showHeader={false}>
       {loading ? (
         <div className="p-4 text-sm text-slate-600">로딩 중…</div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-5">
+          {/* Page Header */}
+          <section className="rounded-[22px] bg-[#F3F5FE] shadow-sm px-5 py-4 md:px-6 md:py-5 flex items-center justify-between">
+            <h1 className="text-[18px] font-semibold text-slate-900 tracking-tight">미션 & 리워드</h1>
+            {onHome && (
+              <button
+                onClick={onHome}
+                className="text-[13px] text-indigo-600 bg-white/70 border border-indigo-100 rounded-full px-3 py-[3px] shadow-sm hover:bg-white hover:border-indigo-200 hover:text-indigo-700 active:scale-[0.97] transition-all"
+              >
+                ← 홈으로
+              </button>
+            )}
+          </section>
           {/* 유저: 미션 목록 */}
-          <Card>
+          <section className="rounded-[22px] bg-[#F3F5FE] shadow-sm px-5 py-6">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-xl font-semibold">진행 가능한 미션</h2>
-              <Button onClick={refresh}>새로고침</Button>
+              <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight mb-2">진행 가능한 미션</h2>
+              <button
+                onClick={refresh}
+                className="text-[13px] text-indigo-600 bg-white/70 border border-indigo-100 rounded-full px-3 py-[3px] shadow-sm hover:bg-white hover:border-indigo-200 hover:text-indigo-700 active:scale-[0.97] transition-all"
+              >
+                새로고침
+              </button>
             </div>
 
             {/* 🚀 Onboarding Hint */}
             {isEmpty && (
-              <div className="mb-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 p-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+              <div className="mb-4 text-[14px] leading-relaxed text-indigo-700 bg-indigo-50 border border-indigo-100 p-4 rounded-[18px] flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
                 <span>🎯</span>
-                <p>미션에 참여하고 달성하면 <strong>포인트와 쿠폰</strong>을 받을 수 있어요.</p>
+                <p>미션에 참여하고 달성하면 <strong className="font-semibold">포인트와 쿠폰</strong>을 받을 수 있어요.</p>
               </div>
             )}
 
@@ -211,19 +228,19 @@ export default function MissionPage({ onHome }: Props) {
                   return (
                     <div
                       key={m.id}
-                      className={`rounded-xl border border-slate-200 p-4 ${isSample ? 'bg-slate-50/50 opacity-80' : ''}`}
+                      className={`rounded-[22px] bg-[#F5F7FF] shadow-sm px-5 py-5 md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150 ${isSample ? 'opacity-80' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <div className={`truncate text-lg font-semibold ${isSample ? 'text-slate-600' : ''}`}>
+                          <div className={`truncate text-[16px] font-semibold text-slate-900 mb-1`}>
                             {m.title}
                           </div>
                           {m.description && (
-                            <p className="mt-1 line-clamp-3 text-sm text-slate-600">
+                            <p className="mt-1 line-clamp-3 text-[14px] text-slate-800 mb-2 leading-relaxed">
                               {m.description}
                             </p>
                           )}
-                          <p className="mt-2 text-xs text-slate-500">
+                          <p className="mt-2 text-[12px] text-slate-500">
                             기간:{" "}
                             {m.starts_at
                               ? format(new Date(m.starts_at), "yyyy-MM-dd")
@@ -233,20 +250,21 @@ export default function MissionPage({ onHome }: Props) {
                               ? format(new Date(m.ends_at), "yyyy-MM-dd")
                               : "제한없음"}
                           </p>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-[12px] text-slate-500">
                             보상: 포인트 {m.reward_points ?? 0}
                             {m.coupon_id ? " + 쿠폰" : ""}
                           </p>
                         </div>
 
                         <div className="flex min-w-[120px] flex-col items-end gap-2">
-                          <span className="text-right text-xs text-slate-500">
+                          <span className="text-right text-[12px] text-slate-500">
                             내 상태: {status}
                           </span>
 
                           {canEnroll && (
-                            <Button
+                            <button
                               disabled={isSample}
+                              className="text-[13px] text-indigo-600 bg-white/80 border border-indigo-100 rounded-full px-4 py-[5px] shadow-sm hover:bg-white hover:border-indigo-200 hover:text-indigo-700 active:scale-[0.97] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                               onClick={async () => {
                                 if (isSample) return;
                                 try {
@@ -263,12 +281,13 @@ export default function MissionPage({ onHome }: Props) {
                               }}
                             >
                               참여하기
-                            </Button>
+                            </button>
                           )}
 
                           {canComplete && (
-                            <Button
+                            <button
                               disabled={isSample}
+                              className="text-[13px] text-indigo-600 bg-white/80 border border-indigo-100 rounded-full px-4 py-[5px] shadow-sm hover:bg-white hover:border-indigo-200 hover:text-indigo-700 active:scale-[0.97] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                               onClick={async () => {
                                 if (isSample) return;
                                 try {
@@ -285,7 +304,7 @@ export default function MissionPage({ onHome }: Props) {
                               }}
                             >
                               완료하기(보상받기)
-                            </Button>
+                            </button>
                           )}
 
                           {!canEnroll && !canComplete && (
@@ -300,20 +319,20 @@ export default function MissionPage({ onHome }: Props) {
                 })
               )}
             </div>
-          </Card>
+          </section>
 
           {/* 유저: 내 쿠폰 */}
-          <Card>
-            <h2 className="mb-3 text-xl font-semibold">내 쿠폰</h2>
+          <section className="rounded-[22px] bg-white shadow-sm px-5 py-6 border border-slate-200">
+            <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight mb-2">내 쿠폰</h2>
             {/* If needed, we could add sample coupons here too, but prioritized Missions as per task flow. */}
             {myCoupons.length === 0 ? (
-              <p className="text-sm text-slate-500">발급된 쿠폰이 없습니다.</p>
+              <p className="text-[14px] text-slate-800">발급된 쿠폰이 없습니다.</p>
             ) : (
               <div className="grid gap-2">
                 {myCoupons.map((uc: any) => (
                   <div
                     key={uc.id}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2"
+                    className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 bg-white"
                   >
                     <div className="min-w-0">
                       <div className="truncate font-medium">
@@ -338,7 +357,7 @@ export default function MissionPage({ onHome }: Props) {
                 ))}
               </div>
             )}
-          </Card>
+          </section>
 
           {/* 운영자 전용 패널 */}
           {operator && (

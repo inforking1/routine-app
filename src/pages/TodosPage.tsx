@@ -346,12 +346,12 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
 
       {/* 🚀 Onboarding Guide Card */}
       {isEmpty && (
-        <div className="mb-4 rounded-2xl bg-indigo-50 p-5 shadow-sm border border-indigo-100 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="mb-4 rounded-[22px] bg-[#F3F5FE] p-6 shadow-sm border border-indigo-100 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex items-start gap-4">
             <span className="text-3xl">📝</span>
             <div>
-              <h3 className="text-lg font-bold text-indigo-900 mb-1">오늘 이렇게 시작해보세요</h3>
-              <p className="text-sm text-indigo-700 leading-relaxed">
+              <h3 className="text-[18px] font-semibold text-slate-900 mb-1">오늘 이렇게 시작해보세요</h3>
+              <p className="text-[14px] text-slate-700 leading-relaxed">
                 작은 성취가 모여 큰 변화를 만듭니다.<br />
                 오늘 꼭 하고 싶은 <strong>한 가지 일</strong>을 적어볼까요?
               </p>
@@ -363,18 +363,19 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
       <SectionCard
         title="할 일(Todos)"
         subtitle="오늘 해야 할 일을 관리하세요."
+        className="bg-[#F5F7FF] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150"
         rightContent={
-          <div className="flex gap-1 rounded-lg bg-slate-100 p-0.5">
+          <div className="flex gap-1 rounded-full bg-slate-100 p-0.5">
             <button
               onClick={() => setViewMode("today")}
-              className={`rounded-md px-3 py-1 text-xs font-bold transition-all ${viewMode === "today" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+              className={`rounded-full px-3 py-1 text-xs font-bold transition-all ${viewMode === "today" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
                 }`}
             >
               오늘 할 일
             </button>
             <button
               onClick={() => setViewMode("all")}
-              className={`rounded-md px-3 py-1 text-xs font-bold transition-all ${viewMode === "all" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+              className={`rounded-full px-3 py-1 text-xs font-bold transition-all ${viewMode === "all" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
                 }`}
             >
               전체 보기
@@ -383,7 +384,7 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
         }
       >
         {/* 1. Summary Widget */}
-        <div className="mb-4 flex items-center justify-between rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 shadow-sm border border-emerald-100">
+        <div className="mb-4 flex items-center justify-between rounded-[16px] bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 shadow-sm border border-emerald-100">
           <span className="text-sm font-semibold text-emerald-800">
             오늘의 성취 🎉
           </span>
@@ -399,17 +400,17 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder={isEmpty ? "예) 오늘 꼭 하고 싶은 한 가지를 적어보세요" : "할 일을 입력하세요..."}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
+            className="w-full rounded-[16px] border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
           />
           <input
             type="date"
             value={due}
             onChange={e => setDue(e.target.value)}
-            className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
+            className="rounded-[16px] border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
           />
           <button
             type="submit"
-            className="rounded-xl bg-emerald-500 px-4 py-2 text-white font-bold hover:bg-emerald-600 shadow-sm transition-transform active:scale-95"
+            className="rounded-full bg-emerald-500 px-4 py-2 text-white font-bold hover:bg-emerald-600 shadow-sm transition-transform active:scale-95"
           >
             추가
           </button>
@@ -550,7 +551,7 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
           <div className="mt-8 flex justify-center border-t border-slate-100 pt-6">
             <button
               onClick={clearCompleted}
-              className="rounded-xl border border-rose-100 bg-rose-50 px-5 py-2 text-sm font-medium text-rose-600 hover:bg-rose-100 hover:text-rose-700 transition-colors"
+              className="rounded-full border border-rose-100 bg-rose-50 px-5 py-2 text-sm font-medium text-rose-600 hover:bg-rose-100 hover:text-rose-700 transition-colors"
             >
               🗑️ 완료된 항목 모두 삭제하기
             </button>

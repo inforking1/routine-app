@@ -361,12 +361,12 @@ export default function GoalsPage({ onHome }: Props) {
 
       {/* 🚀 Onboarding Guide Card */}
       {isEmpty && (
-        <div className="mb-6 rounded-2xl bg-indigo-50 p-5 shadow-sm border border-indigo-100 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="mb-6 rounded-[22px] bg-[#F5F7FF] p-6 shadow-sm border border-indigo-100 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex items-start gap-4">
             <span className="text-3xl">🌱</span>
             <div>
-              <h3 className="text-lg font-bold text-indigo-900 mb-1">처음 사용이시군요 😊</h3>
-              <p className="text-sm text-indigo-700 leading-relaxed">
+              <h3 className="text-[18px] font-semibold text-slate-900 mb-1">처음 사용이시군요 😊</h3>
+              <p className="text-[14px] text-slate-700 leading-relaxed">
                 가장 이루고 싶은 목표부터 가볍게 시작해보세요.<br />
                 아래 예시처럼 <strong>단기 목표</strong>부터 등록해보는 건 어떨까요?
               </p>
@@ -388,10 +388,10 @@ export default function GoalsPage({ onHome }: Props) {
 
       {/* ☀️ Today's Routine Card */}
       {!isEmpty && activeRoutines.length > 0 && (
-        <div className="mb-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 p-4 shadow-sm border border-indigo-100">
+        <div className="mb-6 rounded-[22px] bg-[#F5F7FF] p-6 shadow-sm border border-indigo-100">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xl">☀️</span>
-            <h3 className="font-bold text-indigo-900">오늘의 목표 루틴</h3>
+            <h3 className="text-[18px] font-semibold text-slate-900">오늘의 목표 루틴</h3>
           </div>
           <div className="space-y-2">
             {activeRoutines.map(g => {
@@ -400,16 +400,16 @@ export default function GoalsPage({ onHome }: Props) {
                 <button
                   key={g.id}
                   onClick={() => toggleDailyCheck(g.id)}
-                  className={`flex w-full items-center gap-3 rounded-xl border p-3 transition-all ${isDone
-                      ? "bg-indigo-100 border-indigo-200"
-                      : "bg-white border-white hover:border-indigo-200"
+                  className={`flex w-full items-center gap-3 rounded-[16px] border p-3 transition-colors md:hover:bg-white/50 ${isDone
+                    ? "bg-indigo-100 border-indigo-200"
+                    : "bg-white border-white hover:border-indigo-200"
                     }`}
                 >
                   <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isDone ? "bg-indigo-500 border-indigo-500" : "border-slate-300 bg-white"
                     }`}>
                     {isDone && <span className="text-[10px] text-white">✔</span>}
                   </div>
-                  <span className={`text-sm font-medium ${isDone ? "text-indigo-800 line-through opacity-70" : "text-slate-700"}`}>
+                  <span className={`text-[14px] font-medium ${isDone ? "text-indigo-800 line-through opacity-70" : "text-slate-700"}`}>
                     {g.text}
                   </span>
                 </button>
@@ -421,26 +421,26 @@ export default function GoalsPage({ onHome }: Props) {
 
       <div className="space-y-6">
         {/* ✅ 카드 하단 공백 축소: className으로 h-auto p-3 md:p-4 만 덮어쓰기 */}
-        <SectionCard title="홈 표시 현황" subtitle="단기·중기·장기 중 홈에 노출할 목표 1개씩" className="!h-auto !min-h-0 self-start p-3 md:p-4">
-          <ul className="divide-y divide-slate-200 text-sm">
+        <SectionCard title="홈 표시 현황" subtitle="단기·중기·장기 중 홈에 노출할 목표 1개씩" className="bg-[#F3F5FE] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150">
+          <ul className="divide-y divide-[#E1E6FF] text-[14px]">
             {(["short", "mid", "long"] as Term[]).map((t) => {
               const pickedId = picks[t];
               const picked = items.find((g) => g.id === pickedId) || null;
               return (
-                <li key={t} className="flex items-center justify-between gap-2 py-1.5">
+                <li key={t} className="flex items-center justify-between gap-2 py-3">
                   <div className="min-w-0 flex-1 truncate">
                     <span className="font-semibold text-slate-800">{TERM_LABEL[t]}목표 :</span>{" "}
                     <span className="truncate text-slate-700">
                       {picked ? picked.text : "홈에 표시할 목표를 선택하세요."}
                     </span>{" "}
-                    <span className="text-slate-500">{picked ? metaLine(picked) : ""}</span>
+                    <span className="text-slate-500 text-[12px]">{picked ? metaLine(picked) : ""}</span>
                   </div>
                   <div className="shrink-0">
                     {picked ? (
                       <button
                         onClick={() => setHomePick(t, null)}
                         disabled={savingPick === t}
-                        className="rounded-lg border border-emerald-500 bg-emerald-50 px-3 py-1 text-xs text-emerald-700 hover:bg-emerald-100 transition-colors"
+                        className="rounded-full border border-emerald-500 bg-emerald-50 px-3 py-1 text-xs text-emerald-700 hover:bg-emerald-100 transition-colors"
                         title="홈 표시 해제"
                       >
                         🏠 해제
@@ -459,7 +459,7 @@ export default function GoalsPage({ onHome }: Props) {
         <SectionCard
           title={editingId ? "목표 수정" : "목표 추가"}
           subtitle="목표 입력"
-          className="!h-auto !min-h-0 self-start p-3 md:p-4"
+          className="bg-[#F5F7FF] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150"
         >
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-12">
 
@@ -533,11 +533,11 @@ export default function GoalsPage({ onHome }: Props) {
 
             {/* Buttons */}
             <div className="md:col-span-12 flex gap-2 pt-2">
-              <button type="submit" className="flex-1 rounded-lg border border-emerald-500 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 hover:bg-emerald-100 transition shadow-sm">
+              <button type="submit" className="flex-1 rounded-full border border-emerald-500 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 hover:bg-emerald-100 transition shadow-sm">
                 {editingId ? "수정 완료" : "목표 저장하기"}
               </button>
               {editingId != null && (
-                <button type="button" onClick={resetForm} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+                <button type="button" onClick={resetForm} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
                   취소
                 </button>
               )}
@@ -553,33 +553,34 @@ export default function GoalsPage({ onHome }: Props) {
             const displayList = isEmpty ? SAMPLE_GOALS.filter(g => g.term === t) : realList;
 
             return (
+
               <SectionCard
                 key={t}
                 title={`${TERM_LABEL[t]} 목표`}
                 subtitle={`${displayList.length}개의 목표가 있습니다.`}
-                className="!h-auto !min-h-0 p-3 md:p-4"
+                className="bg-[#F3F5FE] md:hover:shadow-md md:hover:-translate-y-[2px] md:transition-transform md:duration-150"
               >
                 {displayList.length === 0 ? (
                   <div className="py-4 text-center text-sm text-slate-400 bg-slate-50/50 rounded-lg border border-dashed border-slate-200">
                     등록된 {TERM_LABEL[t]} 목표가 없습니다.
                   </div>
                 ) : (
-                  <ul className="divide-y divide-slate-100">
+                  <ul className="divide-y divide-[#E1E6FF]">
                     {displayList.map((g) => {
                       const isSample = g.user_id === 'sample';
                       const isPicked = picks[g.term] === g.id;
                       const isRoutine = routineIds.includes(g.id);
 
                       return (
-                        <li key={g.id} className={`flex items-center justify-between gap-2 py-3 transition-colors rounded-lg px-2 -mx-2 ${isSample ? 'bg-slate-50 opacity-80' : 'hover:bg-slate-50/50'}`}>
+                        <li key={g.id} className={`flex items-center justify-between gap-2 py-3 transition-colors rounded-lg px-2 -mx-2 md:hover:bg-white/50 ${isSample ? 'bg-slate-50 opacity-80' : 'md:hover:cursor-pointer'}`}>
                           <button
-                            className="min-w-0 flex-1 truncate text-left group cursor-default"
+                            className="min-w-0 flex-1 truncate text-left group cursor-pointer"
                             onClick={() => !isSample && handleEdit(g)}
                             disabled={isSample}
                             title={isSample ? '예시 항목입니다' : '클릭하여 수정'}
                           >
                             <div className="flex items-center gap-2 mb-0.5">
-                              <span className={`truncate text-sm font-medium ${isSample ? 'text-slate-600' : 'text-slate-800 group-hover:text-emerald-700'} transition-colors`}>
+                              <span className={`truncate text-[14px] font-medium ${isSample ? 'text-slate-600' : 'text-slate-800 group-hover:text-emerald-700'} transition-colors leading-relaxed`}>
                                 {g.text}
                               </span>
                               {isPicked && (
@@ -589,7 +590,8 @@ export default function GoalsPage({ onHome }: Props) {
                                 <span className="shrink-0 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">루틴</span>
                               )}
                             </div>
-                            <div className="text-xs text-slate-500">
+                            {/* Meta & Buttons */}
+                            <div className="text-[12px] text-slate-500">
                               {metaLine(g)} {g.start_date || g.end_date ? `(${fmt(g.start_date)}~${fmt(g.end_date)})` : ""}
                             </div>
                           </button>
@@ -599,17 +601,17 @@ export default function GoalsPage({ onHome }: Props) {
                               <>
                                 <button
                                   onClick={() => toggleRoutine(g.id)}
-                                  className={`rounded-md p-1.5 transition-colors ${isRoutine ? "text-indigo-600 bg-indigo-50" : "text-slate-300 hover:text-indigo-400"}`}
+                                  className={`rounded-full p-1.5 transition-colors ${isRoutine ? "text-indigo-600 bg-indigo-50" : "text-slate-300 hover:text-indigo-400"}`}
                                   title={isRoutine ? "루틴 해제" : "루틴으로 설정"}
                                 >
                                   🔄
                                 </button>
                                 {isPicked ? (
-                                  <button onClick={() => setHomePick(g.term, null)} disabled={savingPick === g.term} className="rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-600 font-medium hover:bg-emerald-100" title="홈 표시 해제">
+                                  <button onClick={() => setHomePick(g.term, null)} disabled={savingPick === g.term} className="rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-600 font-medium hover:bg-emerald-100" title="홈 표시 해제">
                                     해제
                                   </button>
                                 ) : (
-                                  <button onClick={() => setHomePick(g.term, g.id)} disabled={savingPick === g.term} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500 hover:bg-slate-50 hover:text-emerald-600" title="홈 표시">
+                                  <button onClick={() => setHomePick(g.term, g.id)} disabled={savingPick === g.term} className="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500 hover:bg-slate-50 hover:text-emerald-600" title="홈 표시">
                                     표시
                                   </button>
                                 )}
@@ -629,6 +631,6 @@ export default function GoalsPage({ onHome }: Props) {
           })}
         </div>
       </div>
-    </PageShell >
+    </PageShell>
   );
 }
