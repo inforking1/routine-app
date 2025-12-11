@@ -261,13 +261,13 @@ export default function ContactsPage({ onHome }: { onHome?: () => void }) {
       {mode === "list" && (
         <div className="mb-6 rounded-[22px] bg-[#F5F7FF] p-6 shadow-sm border border-indigo-100">
           <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-[18px] font-semibold text-slate-900">오늘의 안부 👋</h2>
-              <p className="text-[13px] text-slate-600">
+            <div className="flex-1 min-w-0 pr-4">
+              <h2 className="text-[18px] font-semibold text-slate-900 truncate">오늘의 안부 👋</h2>
+              <p className="text-[13px] text-slate-600 break-keep">
                 {isEmpty ? "자주 안부를 전하고 싶은 분들을 등록해두면, 오늘 연락드리면 좋은 분이 자동으로 추천됩니다." : "하루 3명에게 안부를 전해보세요."}
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-right shrink-0 whitespace-nowrap">
               <span className="text-[12px] font-semibold text-indigo-500 block">오늘 완료</span>
               <span className="text-xl font-bold text-indigo-700">{todayContactCount} / 3</span>
             </div>

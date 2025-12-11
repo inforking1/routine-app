@@ -409,7 +409,7 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder={isEmpty ? "예) 오늘 꼭 하고 싶은 한 가지를 적어보세요" : "할 일을 입력하세요..."}
+            placeholder={isEmpty ? "예) 오늘 꼭 이루고 싶은 한 가지를 적어보세요" : "할 일을 입력하세요..."}
             className="w-full rounded-[16px] border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
           />
           <input

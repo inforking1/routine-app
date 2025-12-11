@@ -76,10 +76,10 @@ export default function TopNav() {
         {/* Row 1 */}
         <div className="flex items-center justify-between py-3">
           <button onClick={() => navigate("/")} className="group text-left" aria-label="홈으로">
-            <div className="text-xl font-bold tracking-tight text-slate-800 group-hover:text-slate-900">
+            <div className="text-xl font-bold tracking-tight text-slate-800 group-hover:text-slate-900 whitespace-nowrap">
               성공을 부르는 루틴
             </div>
-            <div className="text-xs text-slate-500">당신의 루틴을 시작하세요.</div>
+            <div className="text-xs text-slate-500 whitespace-nowrap">당신의 루틴을 시작하세요.</div>
           </button>
 
           <div className="flex items-center gap-2">
