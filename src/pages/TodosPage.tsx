@@ -64,7 +64,7 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // UI State
-  const [viewMode, setViewMode] = useState<"today" | "all">("today");
+  const [viewMode, setViewMode] = useState<"today" | "all">("all");
   const [hideCompleted, setHideCompleted] = useState(false);
   const [focusTop3, setFocusTop3] = useState(false);
   const [showRecos, setShowRecos] = useState(false); // Default collapsed in single view

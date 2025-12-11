@@ -27,6 +27,7 @@ function ddBadge(iso?: string | null) {
 
 export default function TodoItem({ todo, onToggle, onClickBody, isDragging, dragHandleProps, ...rest }: Props & React.LiHTMLAttributes<HTMLLIElement>) {
     const badge = ddBadge(todo.due);
+    const isToday = badge?.label === "오늘";
 
     return (
         <li
@@ -81,7 +82,7 @@ export default function TodoItem({ todo, onToggle, onClickBody, isDragging, drag
                     {todo.tags.map(t => (
                         <span key={t} className="text-[10px] text-slate-400">#{t}</span>
                     ))}
-                    {badge && !todo.done && (
+                    {badge && !todo.done && !isToday && (
                         <span className={`px-1.5 py-0.5 text-[10px] rounded ${badge.color}`}>
                             {badge.label}
                         </span>
@@ -89,7 +90,10 @@ export default function TodoItem({ todo, onToggle, onClickBody, isDragging, drag
                 </div>
 
                 {/* Main Text */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                    {isToday && !todo.done && (
+                        <span className="text-rose-500 font-bold text-xs shrink-0">[오늘]</span>
+                    )}
                     <span
                         className={`truncate text-sm font-medium transition-colors ${todo.done ? "line-through text-slate-400" : "text-slate-700"
                             }`}
