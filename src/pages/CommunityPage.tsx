@@ -14,6 +14,8 @@ type ServerPost = {
   content: string;
   likes: number;
   created_at: string;
+  display_name?: string | null;
+  is_anonymous?: boolean | null;
 };
 type ServerComment = {
   id: number;
@@ -25,22 +27,43 @@ type ServerComment = {
   created_at: string;
 };
 
-const nicknameKey = "nickname";
-function getNickname() {
-  return localStorage.getItem(nicknameKey) || "";
-}
-function setNickname(v: string) {
-  localStorage.setItem(nicknameKey, v);
-}
+const getDisplayName = (user: any) => {
+  if (!user) return "익명";
+  return user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "익명";
+};
 function displayTitleOf(p: ServerPost) {
   return (p.title?.trim() || p.content.split("\n")[0] || "제목 없음").slice(0, 120);
 }
 
+const DAILY_QUESTIONS = [
+  "오늘 나를 가장 뿌듯하게 만든 일은 무엇인가요?",
+  "이번 주에 꼭 이루고 싶은 작은 목표가 있다면?",
+  "오늘 하루, 나에게 해주고 싶은 칭찬 한마디는?",
+  "최근에 읽은 글귀 중 기억에 남는 것이 있나요?",
+  "내일의 나를 위해 오늘 미리 준비해둔 것이 있다면?",
+];
+
+const AI_COMMENTS = [
+  "오늘의 기록 멋져요! 작은 실천이 큰 변화를 만듭니다.",
+  "꾸준함이 재능보다 낫다고 하죠. 오늘도 한 걸음 나아가셨네요! 🌱",
+  "스스로를 믿고 나아가는 모습이 정말 아름다워요.",
+  "잠시 쉬어가도 괜찮아요. 중요한 건 멈추지 않는 마음이니까요.",
+  "오늘 하루도 수고 많으셨어요. 편안한 밤 되시길 응원해요 🌙",
+];
+
 export default function CommunityPage({ onHome }: { onHome: () => void }) {
-  const [author, setAuthor] = useState(getNickname());
+  const [author, setAuthor] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [todayQuestion, setTodayQuestion] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
+  useEffect(() => {
+    setTodayQuestion(DAILY_QUESTIONS[Math.floor(Math.random() * DAILY_QUESTIONS.length)]);
+  }, []);
+
+  const [viewMode, setViewMode] = useState<"all" | "my">("all");
   const [query, setQuery] = useState("");
   const [list, setList] = useState<Array<ServerPost & { comments: ServerComment[] }>>([]);
   const [loading, setLoading] = useState(true);
@@ -52,10 +75,35 @@ export default function CommunityPage({ onHome }: { onHome: () => void }) {
     let alive = true;
     (async () => {
       const { data } = await supabase.auth.getUser();
-      if (alive) setUserId(data.user?.id ?? null);
+      if (alive) {
+        setUserId(data.user?.id ?? null);
+        setAuthor(getDisplayName(data.user));
+
+        // Check Admin
+        if (data.user?.id) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", data.user.id)
+            .single();
+          setIsAdmin(profile?.is_admin ?? false);
+        }
+      }
     })();
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, session) => {
       setUserId(session?.user?.id ?? null);
+      setAuthor(getDisplayName(session?.user));
+
+      if (session?.user?.id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", session.user.id)
+          .single();
+        setIsAdmin(profile?.is_admin ?? false);
+      } else {
+        setIsAdmin(false);
+      }
     });
     return () => {
       sub.subscription.unsubscribe();
@@ -72,7 +120,13 @@ export default function CommunityPage({ onHome }: { onHome: () => void }) {
     (async () => {
       try {
         setLoading(true);
-        const { rows, more } = await fetchPosts({ search: query, page, pageSize: PAGE_SIZE });
+        const { rows, more } = await fetchPosts({
+          search: query,
+          page,
+          pageSize: PAGE_SIZE,
+          userId,
+          onlyMine: viewMode === "my"
+        });
         if (!alive) return;
         if (page === 0) setList(rows);
         else setList((prev) => [...prev, ...rows]);
@@ -87,28 +141,39 @@ export default function CommunityPage({ onHome }: { onHome: () => void }) {
     return () => {
       alive = false;
     };
-  }, [query, page]);
+  }, [query, page, viewMode, userId]);
 
-  useEffect(() => setPage(0), [query]);
+  useEffect(() => setPage(0), [query, viewMode]);
 
   const total = useMemo(() => list.length, [list]);
 
-  const handleSaveNickname = (v: string) => {
-    setAuthor(v);
-    setNickname(v);
-  };
+  // Removed handleSaveNickname
 
   async function handleAdd() {
-    const a = (author || "익명").trim();
+    const rawAuthor = (author || "익명").trim();
     const t = title.trim();
     const c = content.trim();
     if (!c) return;
     try {
       setBusy(true);
-      const inserted = await createPost({ author: a, title: t, content: c, userId });
+      // Ensure we have the latest user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      const currentUserId = user?.id ?? null;
+
+      const displayName = isAnonymous ? "익명" : rawAuthor;
+
+      const inserted = await createPost({
+        author: displayName, // Backward compatibility
+        display_name: displayName,
+        is_anonymous: isAnonymous,
+        title: t,
+        content: c,
+        userId: currentUserId
+      });
       setList((prev) => [{ ...inserted, comments: [] }, ...prev]);
       setTitle("");
       setContent("");
+      setIsAnonymous(false);
     } catch (e: any) {
       alert(e?.message ?? "등록 실패");
     } finally {
@@ -120,9 +185,20 @@ export default function CommunityPage({ onHome }: { onHome: () => void }) {
     if (!confirm("이 글을 삭제하시겠어요?")) return;
     try {
       setBusy(true);
-      await sb.from("posts").delete().eq("id", id);
+      // count: 'exact' or 'estimated' to check rows affected
+      const { error, count } = await sb.from("posts").delete({ count: "exact" }).eq("id", id);
+      if (error) throw error;
+      if (count === 0) throw new Error("삭제 권한이 없거나 이미 삭제된 글입니다.");
+
       setList((prev) => prev.filter((p) => p.id !== id));
+      alert("삭제되었습니다."); // User feedback
     } catch (e: any) {
+      alert(e?.message ?? "삭제 실패");
+      // Refresh list to sync state if failure happened
+      setPage(0);
+      setQuery((q) => q + " "); // minimal hack to trigger refetch, or just call fetch
+      // actually, just triggering refetch is better. But minimal impact:
+      window.location.reload();
       alert(e?.message ?? "삭제 실패");
     } finally {
       setBusy(false);
@@ -173,17 +249,47 @@ export default function CommunityPage({ onHome }: { onHome: () => void }) {
   }
 
   return (
-    <PageShell title="명상" onHome={onHome}>
+    <PageShell title="함께 성장하는 공간" onHome={onHome}>
       {/* 글쓰기 */}
-      <SectionCard title="글 쓰기" subtitle="가벼운 생각/기록을 나눠보세요">
-        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <input
-            className="w-44 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-400"
-            placeholder="닉네임 (선택)"
-            value={author}
-            onChange={(e) => handleSaveNickname(e.target.value)}
-          />
+      <SectionCard title="글 쓰기" subtitle="오늘의 생각, 성취, 고민을 가볍게 남겨보세요. 작은 기록이 내일의 루틴을 이어줍니다.">
+
+        {/* Daily Question Prompt */}
+        <div className="mb-4 rounded-xl bg-indigo-50 p-4 border border-indigo-100">
+          <p className="text-xs font-bold text-indigo-500 mb-1">💡 오늘의 질문</p>
+          <p className="text-sm text-indigo-800 font-medium">"{todayQuestion}"</p>
         </div>
+
+        {/* Community Guidelines */}
+        <div className="mb-4 rounded-xl bg-orange-50 p-3 border border-orange-100 text-xs text-orange-800 leading-relaxed">
+          <b>서로를 존중하는 기록 공간입니다.</b><br />
+          익명을 선택하더라도 욕설, 비방, 광고성 글은 관리자에 의해 삭제될 수 있으며,
+          서비스 운영을 위해 작성 기록은 내부적으로 관리됩니다.
+        </div>
+
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+              <span>👤</span>
+              {author || "로그인 필요"}
+            </span>
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isAnonymous}
+              onChange={(e) => setIsAnonymous(e.target.checked)}
+              className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500"
+            />
+            <span className="text-sm text-slate-600">익명으로 올리기</span>
+          </label>
+        </div>
+
+        {isAnonymous && (
+          <p className="mb-3 text-xs text-rose-500 ml-1 font-medium">
+            * 익명이라도 커뮤니티 운영 기준을 위반하는 글은 삭제될 수 있습니다.
+          </p>
+        )}
 
         <input
           className="mb-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-400"
@@ -221,6 +327,28 @@ export default function CommunityPage({ onHome }: { onHome: () => void }) {
 
       {/* 최근 글 + 검색 */}
       <SectionCard title="최근 글" subtitle={`${total}개 게시글`}>
+        {/* View Mode Filter */}
+        <div className="mb-4 flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+          <button
+            onClick={() => setViewMode("all")}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === "all"
+              ? "bg-white text-slate-800 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+              }`}
+          >
+            전체 글
+          </button>
+          <button
+            onClick={() => setViewMode("my")}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === "my"
+              ? "bg-white text-emerald-600 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+              }`}
+          >
+            내 글만
+          </button>
+        </div>
+
         <div className="mb-3 flex items-center gap-2">
           <input
             className="w-56 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-400"
@@ -254,34 +382,52 @@ export default function CommunityPage({ onHome }: { onHome: () => void }) {
                   <li key={p.id} className="rounded-2xl border border-slate-300 bg-white p-4">
                     <div className="mb-2 flex items-center justify-between">
                       <div className="text-sm text-slate-500">
-                        <b className="text-slate-700">{p.author || "익명"}</b> ·{" "}
+                        {p.is_anonymous ? (
+                          <b className="text-slate-700">
+                            익명 {userId && p.user_id === userId ? <span className="text-xs font-normal text-slate-400">(나)</span> : ""}
+                          </b>
+                        ) : (
+                          <b className="text-slate-700">{p.display_name || p.author || "익명"}</b>
+                        )}
+                        {" "}·{" "}
                         {new Date(p.created_at).toLocaleString()}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleLike(p.id)}
-                          className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
-                          title="좋아요"
+                          className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                          title="응원하기"
                         >
-                          👍 {p.likes ?? 0}
+                          👏 응원 {p.likes ?? 0}
                         </button>
-                        <button
-                          onClick={() => handleDelete(p.id)}
-                          className="rounded-xl border border-rose-200 px-3 py-1.5 text-sm text-rose-600 hover:bg-rose-50"
-                          title="삭제"
-                        >
-                          삭제
-                        </button>
+                        {userId && (p.user_id === userId || isAdmin) && (
+                          <button
+                            onClick={() => handleDelete(p.id)}
+                            className={`rounded-xl border px-3 py-1.5 text-sm ${p.user_id === userId
+                              ? "border-rose-200 text-rose-600 hover:bg-rose-50" // My post
+                              : "border-slate-800 text-slate-800 bg-slate-100 hover:bg-slate-200" // Admin Force Delete
+                              }`}
+                            title={p.user_id === userId ? "삭제" : "관리자 삭제"}
+                          >
+                            {p.user_id === userId ? "삭제" : "관리자 삭제"}
+                          </button>
+                        )}
                       </div>
                     </div>
 
                     {/* 제목 */}
-                    <h3 className="mb-1 text-base font-semibold text-emerald-700 hover:text-emerald-800 hover:underline">
+                    <h3 className="mb-2 text-base font-semibold text-slate-800">
                       {t}
                     </h3>
 
                     {/* 내용 */}
-                    <p className="whitespace-pre-wrap leading-relaxed">{rest}</p>
+                    <p className="whitespace-pre-wrap leading-relaxed text-slate-600 mb-4">{rest}</p>
+
+                    {/* AI Auto Comment Placeholder (Dummy) */}
+                    <div className="mb-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 flex items-start gap-2 border border-slate-100">
+                      <span>🤖</span>
+                      <span>{AI_COMMENTS[p.id % AI_COMMENTS.length]}</span>
+                    </div>
 
                     {/* 댓글 */}
                     <CommentsBox
@@ -320,13 +466,23 @@ export default function CommunityPage({ onHome }: { onHome: () => void }) {
 }
 
 // ---- 서버 API -------------------------------------------------------------
-async function fetchPosts(opts: { search?: string; page: number; pageSize: number }) {
-  const { search, page, pageSize } = opts;
+async function fetchPosts(opts: {
+  search?: string;
+  page: number;
+  pageSize: number;
+  userId?: string | null;
+  onlyMine?: boolean;
+}) {
+  const { search, page, pageSize, userId, onlyMine } = opts;
 
   let query = supabase
     .from("posts")
     .select("*, comments(*)", { count: "exact" })
     .order("created_at", { ascending: false });
+
+  if (onlyMine && userId) {
+    query = query.eq("user_id", userId);
+  }
 
   if (search?.trim()) {
     const q = `%${search.trim()}%`;
@@ -346,11 +502,15 @@ async function fetchPosts(opts: { search?: string; page: number; pageSize: numbe
 
 async function createPost({
   author,
+  display_name,
+  is_anonymous,
   title,
   content,
   userId,
 }: {
   author: string;
+  display_name: string;
+  is_anonymous: boolean;
   title: string;
   content: string;
   userId: string | null;
@@ -359,7 +519,15 @@ async function createPost({
   const safeTitle = title.trim() || content.split("\n")[0].slice(0, 120) || "";
   const { data, error } = await sb
     .from("posts")
-    .insert([{ device_id, user_id: userId, author, title: safeTitle || null, content }])
+    .insert([{
+      device_id,
+      user_id: userId,
+      author, // Legacy / Fallback
+      display_name,
+      is_anonymous,
+      title: safeTitle || null,
+      content
+    }])
     .select("*, comments(*)")
     .single();
   if (error) throw error;
@@ -375,13 +543,12 @@ function CommentsBox({
   comments: ServerComment[];
   onAdd: (author: string, text: string) => void;
 }) {
-  const [name, setName] = useState(getNickname());
+  const [name, setName] = useState("");
   const [text, setText] = useState("");
 
   const handle = () => {
     if (!text.trim()) return;
     onAdd(name, text);
-    setNickname(name);
     setText("");
   };
 
