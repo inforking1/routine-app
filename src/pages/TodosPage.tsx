@@ -14,9 +14,14 @@ import {
 
 const daysBetweenToday = (d?: string | null) => {
   if (!d) return null;
-  const today = new Date(new Date().toDateString());
-  const target = new Date(d);
-  return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // Parse YYYY-MM-DD manually to ensure it treats it as local date 00:00
+  const [y, m, day] = d.split('-').map(Number);
+  const target = new Date(y, m - 1, day);
+
+  return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 };
 
 // Sample Data
@@ -159,7 +164,7 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
     if (viewMode === "today" && !search) {
       const todayStr = new Date().toISOString().split("T")[0];
       list = list.filter(t => {
-        if (!t.due) return true; // Show backlog
+        if (!t.due) return false; // Hide backlog/no-date items
         return t.due <= todayStr; // Show past & today
       });
     }

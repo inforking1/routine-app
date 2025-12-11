@@ -12,110 +12,51 @@ import MeditationOfTheDay from "../components/MeditationOfTheDay";
 import NewsFeed from "../components/NewsFeed";
 import CarePing from "../components/CarePing";
 import RoutineCardMinimal from "../components/routine/RoutineCardMinimal";
-import { getSolarDateFromLunar } from "../utils/lunar"; // Import for nextOccurrenceDate
+// getSolarDateFromLunar removed
+import { getNextAnniversaryDate, getDDayLabel } from "../utils/date";
 
-/* ===== Helpers (Locally defined to fix import errors) ===== */
-function pad2(n: number) { return String(n).padStart(2, "0"); }
-function parseYMD(ymd: string) {
-  const [y, m, dd] = ymd.split("-").map((v) => parseInt(v, 10));
-  return new Date(y, (m || 1) - 1, dd || 1);
-}
-function normalizeDateStr(raw: string): string {
-  if (/^\d{2}\/\d{2}$/.test(raw)) {
-    const [mm, dd] = raw.split("/").map((v) => parseInt(v, 10));
-    const y = new Date().getFullYear();
-    return `${y}-${pad2(mm)}-${pad2(dd)}`;
-  }
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
-  return `${new Date().getFullYear()}-${pad2(new Date().getMonth() + 1)}-${pad2(new Date().getDate())}`;
-}
-
-function nextOccurrenceDate(
-  ymd: string,
-  type: 'solar' | 'lunar' | undefined, // Allow undefined to match DB type
-  isRecurring: boolean | undefined,
-  today: Date
-): Date {
-  const safeType = type ?? 'solar'; // Default to solar
-  const safeRecurring = isRecurring ?? true; // Default to true
-
-  const d = parseYMD(normalizeDateStr(ymd));
-
-  if (!safeRecurring) {
-    if (safeType === 'solar') {
-      return d;
-    } else {
-      const solarStr = getSolarDateFromLunar(normalizeDateStr(ymd), d.getFullYear());
-      return parseYMD(solarStr);
-    }
-  }
-
-  const tY = today.getFullYear();
-  const today0 = new Date(tY, today.getMonth(), today.getDate());
-
-  if (safeType === 'solar') {
-    const thisYear = new Date(tY, d.getMonth(), d.getDate());
-    if (thisYear >= today0) return thisYear;
-    return new Date(tY + 1, d.getMonth(), d.getDate());
-  } else {
-    // Lunar recurring
-    const thisYearSolarStr = getSolarDateFromLunar(normalizeDateStr(ymd), tY);
-    const thisYearSolar = parseYMD(thisYearSolarStr);
-    if (thisYearSolar >= today0) return thisYearSolar;
-
-    const nextYearSolarStr = getSolarDateFromLunar(normalizeDateStr(ymd), tY + 1);
-    return parseYMD(nextYearSolarStr);
-  }
-}
-
-function ddayLabel(dateStr: string | Date): string {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // If dateStr is strictly YYYY-MM-DD string, parse it manually to avoid timezone issues?
-  // But basic Date() is fine for D-day approx.
-  const target = new Date(dateStr);
-  target.setHours(0, 0, 0, 0);
-
-  const diff = target.getTime() - today.getTime();
-  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-
-  if (days === 0) return "D-Day";
-  if (days > 0) return `D-${days}`;
-  return `D+${Math.abs(days)}`;
-}
 
 /* ===== 프리뷰 ===== */
 function TodosPreview({ userId }: { userId?: string }) {
-  const [items, setItems] = useState<Todo[]>([]); // Fixed Type
+  const [items, setItems] = useState<Todo[]>([]);
   useEffect(() => {
     if (!userId) return;
     const src = createSource(userId);
     (async () => {
-      const r = await src.listTodos(3);
-      r.sort((a, b) => {
+      // 1. Fetch ALL (or large limit) to filter client side for 'Today'
+      const all = await src.listTodos();
+      const todayStr = new Date().toISOString().split("T")[0];
+
+      // 2. Filter: Incomplete AND Due Today
+      const filtered = all.filter(t => !t.done && t.due === todayStr);
+
+      // 3. Sort (Pinned > Priority > Order)
+      filtered.sort((a, b) => {
         if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
-        return (
-          a.order ?? 0) - (b.order ?? 0);
+        if (a.priority === 'high' && b.priority !== 'high') return -1;
+        if (a.priority !== 'high' && b.priority === 'high') return 1;
+        return (a.order ?? 0) - (b.order ?? 0);
       });
-      setItems(r);
+
+      // 4. Take top 5
+      setItems(filtered.slice(0, 5));
     })();
   }, [userId]);
+
   return items.length ? (
-    <ul className="space-y-2 text-[14px] text-slate-800 leading-relaxed">
+    <ul className="divide-y divide-indigo-100 text-[14px] text-slate-800 leading-relaxed">
       {items.map((t) => (
-        <li key={t.id} className="flex items-center justify-between">
+        <li key={t.id} className="flex items-center py-2">
+          {/* Badge Style matching TodosPage */}
+          <span className="text-rose-500 font-bold text-xs shrink-0 mr-1.5">[오늘]</span>
           <span className="truncate">{t.text}</span>
-          {t.due && (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[12px] text-slate-500">
-              {ddayLabel(t.due)}
-            </span>
-          )}
         </li>
       ))}
     </ul>
   ) : (
-    <p className="text-[13px] text-slate-600">표시할 항목이 없습니다.</p>
+    <p className="text-[13px] text-slate-600">
+      오늘 할 일은 없습니다. 할 일 페이지에서 새 할 일을 추가해 보세요.
+    </p>
   );
 }
 
@@ -128,17 +69,17 @@ function AnniversariesPreview({ userId }: { userId: string }) {
   const today = new Date();
   const upcoming3 = useMemo(() => {
     return items
-      .map((it) => ({ it, next: nextOccurrenceDate(it.date, it.type, it.is_recurring, today) })) // Using helpers
+      .map((it) => ({ it, next: getNextAnniversaryDate(it.date, it.type, it.is_recurring, today) }))
       .sort((a, b) => a.next.getTime() - b.next.getTime())
       .slice(0, 3);
   }, [items]);
   return upcoming3.length ? (
     <ul className="divide-y divide-indigo-100 text-[14px] text-slate-800 leading-relaxed">
-      {upcoming3.map(({ it }) => (
+      {upcoming3.map(({ it, next }) => (
         <li key={it.id} className="flex items-center justify-between py-2">
           <span className="truncate">{it.title}</span>
           <span className="rounded-full bg-indigo-100/70 px-3 py-[2px] text-[12px] text-indigo-600">
-            {ddayLabel(it.date)} {/* Note: usually we show D-Day to NEXT occurrence, but simple date label is fine too, or we can use nextOccurrence */}
+            {getDDayLabel(next).label}
           </span>
         </li>
       ))}
@@ -243,9 +184,9 @@ function BucketPreview({ userId }: { userId: string }) {
   }, [userId]);
 
   return items.length ? (
-    <ul className="space-y-2 text-[14px] text-slate-800 leading-relaxed">
+    <ul className="divide-y divide-indigo-100 text-[14px] text-slate-800 leading-relaxed">
       {items.map((b) => (
-        <li key={b.id} className="py-0">
+        <li key={b.id} className="py-2">
           {b.title}
         </li>
       ))}

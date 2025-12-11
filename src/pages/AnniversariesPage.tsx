@@ -4,6 +4,7 @@ import PageShell from "../components/PageShell";
 import SectionCard from "../components/SectionCard";
 import { supabase } from "../lib/supabase";
 import { getSolarDateFromLunar } from "../utils/lunar";
+import { normalizeDateStr, parseYMD, getNextAnniversaryDate, getDDayLabel } from "../utils/date";
 
 /** ===== types ===== */
 export type Anniversary = {
@@ -21,16 +22,8 @@ type Props = {
 };
 
 /** ===== utils ===== */
-function pad2(n: number) {
-  return String(n).padStart(2, "0");
-}
-function fmtYMD(d: Date) {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-}
-function parseYMD(ymd: string) {
-  const [y, m, dd] = ymd.split("-").map((v) => parseInt(v, 10));
-  return new Date(y, (m || 1) - 1, dd || 1);
-}
+
+
 function isSameDay(a: Date, b: Date) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -43,63 +36,6 @@ function startOfMonth(d: Date) {
 }
 function endOfMonth(d: Date) {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0);
-}
-
-/** "MM/DD" → "YYYY-MM-DD" 보정 */
-function normalizeDateStr(raw: string): string {
-  if (/^\d{2}\/\d{2}$/.test(raw)) {
-    const [mm, dd] = raw.split("/").map((v) => parseInt(v, 10));
-    const y = new Date().getFullYear();
-    return `${y}-${pad2(mm)}-${pad2(dd)}`;
-  }
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
-  return fmtYMD(new Date());
-}
-
-/** 
- * 다가오는 다다음 발생일 계산 (Solar/Lunar 고려)
- */
-function nextOccurrenceDate(
-  ymd: string,
-  type: 'solar' | 'lunar',
-  isRecurring: boolean,
-  today: Date
-): Date {
-  const d = parseYMD(normalizeDateStr(ymd));
-  // d는 DB에 저장된 "기준 날짜" (양력 or 음력)
-
-  // 1. 반복 안 함:
-  if (!isRecurring) {
-    if (type === 'solar') {
-      return d;
-    } else {
-      // 음력 1회성: 그 해의 음력 날짜를 양력으로 변환
-      const solarStr = getSolarDateFromLunar(normalizeDateStr(ymd), d.getFullYear());
-      return parseYMD(solarStr);
-    }
-  }
-
-  // 2. 반복 함:
-  const tY = today.getFullYear();
-  const today0 = new Date(tY, today.getMonth(), today.getDate());
-
-  if (type === 'solar') {
-    // 양력 매년 반복
-    const thisYear = new Date(tY, d.getMonth(), d.getDate());
-    if (thisYear >= today0) return thisYear;
-    return new Date(tY + 1, d.getMonth(), d.getDate());
-  } else {
-    // 음력 매년 반복
-    // Step 1: 올해(tY)의 음력 변환
-    const thisYearSolarStr = getSolarDateFromLunar(normalizeDateStr(ymd), tY);
-    const thisYearSolar = parseYMD(thisYearSolarStr);
-
-    if (thisYearSolar >= today0) return thisYearSolar;
-
-    // Step 2: 내년(tY+1)의 음력 변환
-    const nextYearSolarStr = getSolarDateFromLunar(normalizeDateStr(ymd), tY + 1);
-    return parseYMD(nextYearSolarStr);
-  }
 }
 
 const SAMPLE_ANNIVERSARIES: Anniversary[] = [
@@ -268,7 +204,7 @@ export default function AnniversariesPage({ onHome }: Props) {
 
     const withNext = source.map((it) => ({
       it,
-      next: nextOccurrenceDate(it.date, it.type ?? 'solar', it.is_recurring ?? true, today)
+      next: getNextAnniversaryDate(it.date, it.type ?? 'solar', it.is_recurring ?? true, today)
     }));
 
     today.setHours(0, 0, 0, 0);
@@ -432,26 +368,17 @@ export default function AnniversariesPage({ onHome }: Props) {
             const isSample = a.user_id === 'sample';
 
             // D-Day Calc
-            const today0 = new Date();
-            today0.setHours(0, 0, 0, 0);
-            const aNext = new Date(a.next);
-            aNext.setHours(0, 0, 0, 0);
+            const dDayInfo = getDDayLabel(a.next);
+            const dDayStr = dDayInfo.type === 'past' ? dDayInfo.fullLabel : dDayInfo.label;
+            const diffDays = dDayInfo.diffDays;
 
-            const diffTime = aNext.getTime() - today0.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            let dDayStr = "";
             let dDayClass = "bg-slate-100 text-slate-600";
-
-            if (diffDays === 0) {
-              dDayStr = "D-Day";
+            if (dDayInfo.type === 'today') {
               dDayClass = "bg-rose-100 text-rose-600 font-bold";
-            } else if (diffDays > 0) {
-              dDayStr = `D-${diffDays}`;
+            } else if (dDayInfo.type === 'future') {
               if (diffDays <= 7) dDayClass = "bg-rose-100 text-rose-600 font-bold";
               else if (diffDays <= 30) dDayClass = "bg-amber-100 text-amber-700";
             } else {
-              dDayStr = `지남 (${Math.abs(diffDays)}일 전)`;
               dDayClass = "bg-slate-200 text-slate-500 line-through";
             }
 
@@ -638,18 +565,13 @@ export default function AnniversariesPage({ onHome }: Props) {
               // 여기 있는 dayItems는 이미 이 날짜에 match된 것들이다.
               // 즉 cellDate가 곧 기념일이다.
               // D-Day는 (cellDate - today)
-              const today0 = new Date();
-              today0.setHours(0, 0, 0, 0);
-              const me = new Date(cellDate);
-              me.setHours(0, 0, 0, 0);
-
-              const diffTime = me.getTime() - today0.getTime();
-              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              const dDayInfo = getDDayLabel(cellDate);
+              const diffDays = dDayInfo.diffDays;
 
               if (diffDays >= 0 && diffDays <= 7) {
                 badge = {
                   icon: "",
-                  label: diffDays === 0 ? "D-Day" : `D-${diffDays}`,
+                  label: dDayInfo.label,
                   color: "bg-rose-100 text-rose-700 font-bold",
                 };
               }
