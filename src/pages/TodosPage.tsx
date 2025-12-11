@@ -83,6 +83,7 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
   // DB Data
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEmpty = todos.length === 0;
 
@@ -231,9 +232,11 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
   // ---- Handlers ----
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
-    if (!user || !src) return;
+    if (!user || !src || isSubmitting) return;
     const text = input.trim();
     if (!text) return;
+
+    setIsSubmitting(true);
 
     const optimistic: Todo = {
       id: "tmp_" + Date.now(),
@@ -274,6 +277,8 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
     } catch {
       setTodos(prev => prev.filter(t => t.id !== optimistic.id));
       alert("추가 실패");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -415,9 +420,10 @@ export default function TodosPage({ onHome }: { onHome?: () => void }) {
           />
           <button
             type="submit"
-            className="rounded-full bg-emerald-500 px-4 py-2 text-white font-bold hover:bg-emerald-600 shadow-sm transition-transform active:scale-95"
+            disabled={isSubmitting}
+            className="rounded-full bg-emerald-500 px-4 py-2 text-white font-bold hover:bg-emerald-600 shadow-sm transition-transform active:scale-95 disabled:opacity-50"
           >
-            추가
+            {isSubmitting ? "..." : "추가"}
           </button>
         </form>
 

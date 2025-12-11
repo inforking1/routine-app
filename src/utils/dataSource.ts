@@ -117,7 +117,7 @@ export function createSource(userId: UUID) {
         .select("id,user_id,title,date,type,is_recurring,created_at")
         .eq("user_id", userId)
         .order("date", { ascending: true });
-      if (limit) q = q.limit(limit);
+      q = q.limit(limit || 50);
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as Anniversary[];
@@ -131,7 +131,7 @@ export function createSource(userId: UUID) {
         .eq("user_id", userId)
         .order("date", { ascending: false })
         .order("created_at", { ascending: false });
-      if (limit) q = q.limit(limit);
+      q = q.limit(limit || 50);
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as Gratitude[];
@@ -179,7 +179,7 @@ export function createSource(userId: UUID) {
         .select("id,user_id,text,selected,created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
-      if (limit) q = q.limit(limit);
+      q = q.limit(limit || 50);
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as MindPledge[];

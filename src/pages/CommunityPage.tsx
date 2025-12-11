@@ -59,6 +59,7 @@ export default function CommunityPage({ onHome }: { onHome: () => void }) {
   const [todayQuestion, setTodayQuestion] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
 
+
   useEffect(() => {
     setTodayQuestion(DAILY_QUESTIONS[Math.floor(Math.random() * DAILY_QUESTIONS.length)]);
   }, []);
@@ -477,7 +478,7 @@ async function fetchPosts(opts: {
 
   let query = supabase
     .from("posts")
-    .select("*, comments(*)", { count: "exact" })
+    .select("id,user_id,device_id,title,content,author,created_at,likes,views,display_name,is_anonymous, comments(*)", { count: "exact" })
     .order("created_at", { ascending: false });
 
   if (onlyMine && userId) {
