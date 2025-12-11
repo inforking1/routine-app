@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import useAuth from "../hooks/useAuth";
 import { supabase } from "../lib/supabaseClient";
+import { isInAppBrowser } from "../utils/browser";
 
 /** 로그인 처리를 위한 헬퍼 */
 function buildHashRedirect(path: string) {
@@ -143,6 +144,12 @@ export default function AuthCard() {
   };
 
   const handleGoogle = async () => {
+    // 인앱 브라우저 체크
+    if (isInAppBrowser()) {
+      alert("인앱 브라우저(카카오/인스타 등)에서는 Google 로그인이 제한됩니다.\n\n우측 상단 메뉴를 눌러 '다른 브라우저로 열기'를 해주세요.");
+      return;
+    }
+
     setErr(null);
     setMsg(null);
     setBusy(true);

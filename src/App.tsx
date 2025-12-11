@@ -142,6 +142,9 @@ import ExitToast from "./components/ExitToast";
 
 // ... imports ...
 
+
+import InAppBrowserGuide from "./components/InAppBrowserGuide";
+
 /* 실제 앱 라우팅 로직 */
 function AppContent() {
   const navigate = useNavigate();
@@ -187,7 +190,9 @@ function AppContent() {
 
   return (
     <>
+      <InAppBrowserGuide />
       {/* 2번 뒤로가기 종료 토스트 */}
+
       {showExitToast && <ExitToast onClose={closeToast} />}
 
       <Routes>
