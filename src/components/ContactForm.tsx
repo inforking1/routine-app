@@ -37,7 +37,6 @@ export default function ContactForm({ initial, onSubmit, onCancel, busy }: Props
   const [anniversary, setAnniversary] = useState<string>(toYYYYMMDD(initial?.anniversary ?? null));
   const [anniversaryType, setAnniversaryType] = useState<"solar" | "lunar">(initial?.anniversary_type ?? "solar");
 
-  const [note, setNote] = useState("");
 
   useEffect(() => {
     setName(initial?.name ?? "");
@@ -83,7 +82,6 @@ export default function ContactForm({ initial, onSubmit, onCancel, busy }: Props
     } as unknown as Omit<Contact, "id" | "created_at" | "user_id">;
 
     await onSubmit(payload);
-    setNote("");
   };
 
   return (
@@ -104,6 +102,9 @@ export default function ContactForm({ initial, onSubmit, onCancel, busy }: Props
             className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             placeholder="예) 홍길동"
             required
+            autoCorrect="off"
+            autoComplete="off"
+            autoCapitalize="off"
           />
         </div>
 
@@ -128,6 +129,8 @@ export default function ContactForm({ initial, onSubmit, onCancel, busy }: Props
             onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
             className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             placeholder="숫자만 입력 (예: 01012345678)"
+            autoCorrect="off"
+            autoComplete="off"
           />
         </div>
 
@@ -162,6 +165,9 @@ export default function ContactForm({ initial, onSubmit, onCancel, busy }: Props
               }}
               placeholder="직접 입력 (Enter로 추가)"
               className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs outline-none focus:border-indigo-500"
+              autoCorrect="off"
+              autoComplete="off"
+              autoCapitalize="off"
             />
             <button
               type="button"

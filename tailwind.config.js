@@ -13,6 +13,14 @@ export default {
           600: "#0284c7",
         },
       },
+      fontFamily: {
+        sans: [
+          '"Noto Sans KR"',
+          '"Apple SD Gothic Neo"',
+          '"Malgun Gothic"',
+          "sans-serif",
+        ],
+      },
     },
   },
   plugins: [],

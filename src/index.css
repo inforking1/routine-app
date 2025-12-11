@@ -14,9 +14,20 @@ body,
   height: 100%;
 }
 
+@layer base {
+  /* Font handled in tailwind.config.js */
+}
+
 body {
   @apply bg-[#F6F8FC] text-slate-900 antialiased;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  /* 안전장치 */
 }
+
+
+/* 입력 필드 글로벌 스타일 (CSS로 attribute 제어 불가하지만, 스타일 단에서 보완) */
+/* input, textarea attribute settings are handled in JSX */
 
 .dark body {
   @apply bg-slate-900 text-slate-100;

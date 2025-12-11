@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import useAuth from "../hooks/useAuth";
 import { supabase } from "../lib/supabaseClient";
 import { isInAppBrowser } from "../utils/browser";
+import InstallPWAButton from "./InstallPWAButton";
 
 /** 로그인 처리를 위한 헬퍼 */
 function buildHashRedirect(path: string) {
@@ -55,6 +56,18 @@ export default function AuthCard() {
     const u = new URL(window.location.href);
     const qNext = u.searchParams.get("next");
     if (qNext) sessionStorage.setItem("post_login_next", qNext);
+  }, []);
+
+  // PWA 설치 상태 감지
+  const [isStandalone, setIsStandalone] = useState(false);
+  useEffect(() => {
+    const check = () =>
+      window.matchMedia?.("(display-mode: standalone)")?.matches ||
+      (window as any).navigator?.standalone === true;
+    setIsStandalone(check());
+    const onInstalled = () => setIsStandalone(true);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => window.removeEventListener("appinstalled", onInstalled);
   }, []);
 
   // 유효성 상태 계산
@@ -215,6 +228,43 @@ export default function AuthCard() {
       </h2>
       <p className="text-sm text-slate-500 mb-6">성공을 위한 루틴, 오늘부터 시작하세요.</p>
 
+      {/* 1. Google Login (Main CTA) */}
+      {mode !== "reset" && (
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={handleGoogle}
+            disabled={busy}
+            className="w-full flex flex-col items-center justify-center rounded-xl bg-slate-900 py-3.5 text-white transition hover:bg-slate-800 disabled:opacity-50 shadow-sm"
+          >
+            <span className="text-base font-bold">Google 계정으로 시작하기</span>
+            <span className="text-[11px] font-light opacity-80 mt-0.5">첫 로그인 시 자동으로 계정이 생성됩니다.</span>
+          </button>
+        </div>
+      )}
+
+      {/* 2. PWA Install (Secondary CTA) */}
+      {!isStandalone && mode !== "reset" && (
+        <div className="mb-6 flex flex-col items-center justify-center rounded-xl bg-slate-50 p-4 border border-slate-100">
+          <p className="mb-3 text-center text-sm text-slate-600 leading-snug">
+            설치하면 <span className="font-semibold text-blue-600">앱처럼 편리하게</span><br />사용하실 수 있어요.
+          </p>
+          <InstallPWAButton />
+        </div>
+      )}
+
+      {/* 3. Divider */}
+      {mode !== "reset" && (
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-2 text-slate-500">또는 이메일로 로그인</span>
+          </div>
+        </div>
+      )}
+
       {/* 메시지 영역 */}
       {msg && (
         <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -241,6 +291,9 @@ export default function AuthCard() {
               placeholder="example@email.com"
               className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/10 placeholder:text-slate-400 transition"
               disabled={busy}
+              autoCorrect="off"
+              autoComplete="off"
+              autoCapitalize="off"
             // autoFocus
             />
             {email && !isValidEmail && (
@@ -259,6 +312,9 @@ export default function AuthCard() {
                 placeholder="6자 이상 입력"
                 className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/10 placeholder:text-slate-400 transition"
                 disabled={busy}
+                autoCorrect="off"
+                autoComplete="off"
+                autoCapitalize="off"
               />
             </div>
           )}
@@ -274,6 +330,9 @@ export default function AuthCard() {
                 placeholder="비밀번호 다시 입력"
                 className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/10 placeholder:text-slate-400 transition"
                 disabled={busy}
+                autoCorrect="off"
+                autoComplete="off"
+                autoCapitalize="off"
               />
               {password2 && !isPwMatch && (
                 <p className="mt-1 text-xs text-rose-500">비밀번호가 일치하지 않습니다.</p>
@@ -285,32 +344,20 @@ export default function AuthCard() {
           <button
             type="submit"
             disabled={!canSubmit || busy}
-            className="w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="w-full rounded-xl bg-white border border-slate-300 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
             {busy ? (
               <span className="flex items-center justify-center gap-2">
-                <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 animate-spin text-slate-500" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
                 처리 중...
               </span>
             ) : (
-              mode === "signin" ? "로그인" : mode === "signup" ? "회원가입" : "이메일 전송"
+              mode === "signin" ? "로그인" : mode === "signup" ? "가입하기" : "이메일 전송"
             )}
           </button>
-
-          {/* Social Login (Reset 모드 제외) */}
-          {mode !== "reset" && (
-            <button
-              type="button"
-              onClick={handleGoogle}
-              disabled={busy}
-              className="w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-            >
-              Google로 계속하기
-            </button>
-          )}
 
         </div>
       </form>

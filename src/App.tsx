@@ -3,7 +3,6 @@ import { Routes, Route, useNavigate, Navigate, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import useAuth, { AuthProvider } from "./hooks/useAuth";
 import AuthCallback from "./pages/AuthCallback";
-import InstallPWAButton from "./components/InstallPWAButton";
 import TopNav from "./components/TopNav";
 import AuthCard from "./components/AuthCard";
 import Home from "./pages/Home";
@@ -108,15 +107,7 @@ function UnauthedLayout({ isStandalone }: { isStandalone: boolean }) {
       <TopNav />
       <div className="mx-auto max-w-6xl px-4 pt-4 md:px-6 md:pt-6">
         <Outlet />
-        {/* PWA 안내 박스 (설치 상태 아닐 때만) */}
-        {!isStandalone && (
-          <div className="mt-2 mx-auto w-full max-w-sm flex flex-col items-center rounded-2xl border border-gray-200 bg-white/60 p-3 shadow-sm backdrop-blur-md">
-            <p className="mb-1 text-center text-sm text-gray-700 leading-snug">
-              설치하시면 <span className="font-semibold text-blue-600">앱처럼 편리하게</span> 사용하실 수 있어요.
-            </p>
-            <InstallPWAButton />
-          </div>
-        )}
+
         <div className={isStandalone ? "mt-3" : "mt-2"}>
           <GuideInline />
         </div>
